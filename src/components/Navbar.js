@@ -273,22 +273,22 @@ export default function Navbar({
 
   return (
     <header
-      className={`w-full sticky top-0 z-50 border-b transition-all duration-300 ${
+      className={`w-[#100%] sticky top-0 z-50 border-b transition-all duration-300 ${
         scrolled
           ? 'bg-white/85 backdrop-blur-md border-[#D9D4C4] shadow-md'
           : 'bg-white border-[#D9D4C4] shadow-sm'
       }`}
     >
-      {/* ANNOUNCEMENT BAR */}
-      <div className="bg-[#0B120D] py-2 px-4 flex items-center justify-center gap-2.5 overflow-hidden">
-        <span className="shrink-0 bg-white rounded-sm p-[3px] flex items-center justify-center">
+      {/* ANNOUNCEMENT BAR (FIXED FOR OVERFLOW) */}
+      <div className="bg-[#0B120D] py-2 px-3 sm:px-4 flex items-center justify-center gap-2 overflow-hidden w-full">
+        <span className="shrink-0 bg-white rounded-sm p-[2px] sm:p-[3px] flex items-center justify-center">
           <img src="/logo.jpg" alt="Kamran Sports Karachi" className="h-4 sm:h-5 w-auto object-contain" />
         </span>
-        <div className="flex items-center gap-1 max-w-full">
-          <span className="text-[#C79A44] font-[family-name:var(--font-mono,'IBM_Plex_Mono',monospace)] text-[10px] sm:text-xs font-medium tracking-[0.15em] uppercase whitespace-nowrap">
+        <div className="flex items-center gap-1 min-w-0 max-w-[75vw] sm:max-w-none overflow-hidden">
+          <span className="text-[#C79A44] font-[family-name:var(--font-mono,'IBM_Plex_Mono',monospace)] text-[10px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.15em] uppercase whitespace-nowrap truncate">
             {typedText}
           </span>
-          <span className="text-[#C79A44] font-medium text-xs sm:text-sm animate-pulse" aria-hidden="true">
+          <span className="text-[#C79A44] font-medium text-xs sm:text-sm animate-pulse shrink-0" aria-hidden="true">
             |
           </span>
         </div>
@@ -432,16 +432,16 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* MOBILE DRAWER */}
+      {/* MOBILE DRAWER (POSITIONS FIXED TO PREVENT SHIFT) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#0B120D] text-white py-4 px-5 border-t border-white/10 space-y-3 shadow-2xl max-h-[80vh] overflow-y-auto">
+        <div className="lg:hidden absolute top-full left-0 right-0 w-full bg-[#0B120D] text-white py-4 px-5 border-t border-white/10 space-y-3 shadow-2xl max-h-[80vh] overflow-y-auto z-50">
           <div className="relative w-full pb-1">
             <input
               type="text"
               placeholder="Search products..."
               value={currentSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 text-xs px-3 py-2.5 pl-9 pr-8 rounded-sm text-white placeholder-neutral-400"
+              className="w-full bg-white/10 border border-white/20 text-xs px-3 py-2.5 pl-9 pr-8 rounded-sm text-white placeholder-neutral-400 focus:outline-none"
             />
             <SearchIcon className="w-4 h-4 absolute left-3 top-3 text-neutral-400 pointer-events-none" />
           </div>
@@ -454,22 +454,22 @@ export default function Navbar({
                   <div key={cat.name}>
                     <button
                       onClick={() => setOpenMobileSection(isExpanded ? null : cat.name)}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-sm text-sm font-semibold uppercase tracking-wide text-neutral-300 hover:bg-white/5"
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-sm text-xs font-semibold uppercase tracking-wide text-neutral-300 hover:bg-white/5"
                     >
                       {cat.name}
                       <ChevronIcon className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </button>
 
                     {isExpanded && (
-                      <div className="mt-2 ml-3 pl-3 border-l border-white/10 space-y-4">
+                      <div className="mt-2 ml-3 pl-3 border-l border-white/10 space-y-3">
                         {cat.sections.map((sec) => (
                           <div key={sec.title} className="space-y-1">
-                            <p className="text-xs font-bold text-[#C79A44] uppercase tracking-wider">{sec.title}</p>
+                            <p className="text-[11px] font-bold text-[#C79A44] uppercase tracking-wider">{sec.title}</p>
                             {sec.items.map((item) => (
                               <button
                                 key={item.name}
                                 onClick={() => handleSubClick(item.value)}
-                                className="w-full text-left px-2 py-1.5 text-xs text-neutral-400 hover:text-white block normal-case"
+                                className="w-full text-left px-2 py-1 text-xs text-neutral-400 hover:text-white block normal-case"
                               >
                                 {item.name}
                               </button>
@@ -486,7 +486,7 @@ export default function Navbar({
                 <button
                   key={cat.name}
                   onClick={() => handleSubClick(cat.value)}
-                  className={`w-full text-left px-4 py-3 rounded-sm text-sm font-semibold uppercase tracking-wide ${
+                  className={`w-full text-left px-3 py-2.5 rounded-sm text-xs font-semibold uppercase tracking-wide ${
                     cat.isSpecial ? 'bg-[#A6362B] text-white' : 'text-neutral-300 hover:bg-white/5'
                   }`}
                 >
