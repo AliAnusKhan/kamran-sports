@@ -1,0 +1,76 @@
+[
+  {
+    "id": "1",
+    "name": "Kamran Gold Edition English Willow",
+    "mainCategory": "Bats",
+    "batType": "Hardball",
+    "brand": "Kamran Sports",
+    "price": 22000,
+    "sizes": ["SH", "LH"],
+    "description": "Grade 1 English Willow with 12 grains and massive edges."
+  },
+  {
+    "id": "2",
+    "name": "CA Dragon 15000 Players Edition",
+    "mainCategory": "Bats",
+    "batType": "Hardball",
+    "brand": "CA",
+    "price": 28000,
+    "sizes": ["SH"],
+    "description": "Used by international players, lightweight pickup."
+  },
+  {
+    "id": "3",
+    "name": "SS Ton Reserve Edition",
+    "mainCategory": "Bats",
+    "batType": "Hardball",
+    "brand": "SS",
+    "price": 35000,
+    "sizes": ["SH"],
+    "description": "Handcrafted Indian Willow with supreme balance."
+  },
+  {
+    "id": "4",
+    "name": "AK 48 Rawalakot Monster Hitter",
+    "mainCategory": "Bats",
+    "batType": "Tapeball",
+    "style": "Rawalakot",
+    "brand": "AK 48",
+    "price": 4500,
+    "sizes": ["Full Size 35 inch"],
+    "description": "Special Rawalakot wood edition for massive sixes."
+  },
+  {
+    "id": "5",
+    "name": "TM King Coconut Scoop Bat",
+    "mainCategory": "Bats",
+    "batType": "Tapeball",
+    "style": "Coconut",
+    "brand": "TM",
+    "price": 4200,
+    "sizes": ["Full Size 35 inch"],
+    "description": "Coconut profile scoop bat engineered for fast tapeball."
+  },
+  {
+    "id": "6",
+    "name": "JD Gold Power Hitter",
+    "mainCategory": "Bats",
+    "batType": "Tapeball",
+    "style": "Rawalakot",
+    "brand": "JD",
+    "price": 3800,
+    "sizes": ["Full Size"],
+    "description": "Double blade poplar wood bat with rubber grip."
+  },
+  {
+    "id": "7",
+    "name": "Saki Cobra Edition",
+    "mainCategory": "Bats",
+    "batType": "Tapeball",
+    "style": "Coconut",
+    "brand": "Saki",
+    "price": 3600,
+    "sizes": ["Full Size"],
+    "description": "Lightweight curved blade for fast wrist action."
+  }
+]
