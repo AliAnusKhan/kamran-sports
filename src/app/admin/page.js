@@ -59,6 +59,10 @@ const EMPTY_HERO_FORM = {
   image: '',
 };
 
+const EMPTY_WILLOW_FORM = {
+  image: '',
+};
+
 async function safeFetch(url, options = {}) {
   const res = await fetch(url, options);
   const text = await res.text();
@@ -79,7 +83,7 @@ function SafeImage({ src, alt, className }) {
   return (
     <img
       src={!src || errored ? FALLBACK_IMG : src}
-      alt={alt}
+      alt={alt || 'Image'}
       onError={() => setErrored(true)}
       className={className}
       draggable="false"
@@ -113,7 +117,17 @@ export default function AdminPage() {
   const [products, setProducts] = useState([]);
   const [stars, setStars] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
-  
+  const [willowImages, setWillowImages] = useState([]);
+  const [deliveryRequests, setDeliveryRequests] = useState([]);
+  const [reviews, setReviews] = useState([]);
+
+  // Willow Form State
+  const [willowFormData, setWillowFormData] = useState(EMPTY_WILLOW_FORM);
+
+  // Filters
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState('All');
+  const [reviewStatusFilter, setReviewStatusFilter] = useState('All');
+
   // Product Form State
   const [formData, setFormData] = useState(EMPTY_PRODUCT_FORM);
   const [editingId, setEditingId] = useState(null);
@@ -203,10 +217,43 @@ export default function AdminPage() {
     }
   };
 
+  const fetchWillowImages = async () => {
+    try {
+      const data = await safeFetch('/api/willow-gallery');
+      const list = Array.isArray(data) ? data : (data.images || data.data || []);
+      setWillowImages(list);
+    } catch (err) {
+      console.error('Fetch willow images error:', err.message);
+    }
+  };
+
+  const fetchDeliveryRequests = async () => {
+    try {
+      const data = await safeFetch('/api/delivery-requests');
+      const list = Array.isArray(data) ? data : (data.requests || data.data || []);
+      setDeliveryRequests(list);
+    } catch (err) {
+      console.error('Fetch delivery requests error:', err.message);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const data = await safeFetch('/api/reviews?all=true');
+      const list = Array.isArray(data) ? data : (data.reviews || data.data || []);
+      setReviews(list);
+    } catch (err) {
+      console.error('Fetch reviews error:', err.message);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchStars();
     fetchHeroSlides();
+    fetchWillowImages();
+    fetchDeliveryRequests();
+    fetchReviews();
     return () => dismissTimer.current && clearTimeout(dismissTimer.current);
   }, []);
 
@@ -214,6 +261,11 @@ export default function AdminPage() {
     setMessage({ type, text });
     if (dismissTimer.current) clearTimeout(dismissTimer.current);
     dismissTimer.current = setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+  };
+
+  const switchTab = (tabName) => {
+    handleClearImage();
+    setActiveTab(tabName);
   };
 
   const handleChange = (e) => {
@@ -258,6 +310,7 @@ export default function AdminPage() {
     setFormData((prev) => ({ ...prev, image: '' }));
     setStarFormData((prev) => ({ ...prev, image: '' }));
     setHeroFormData((prev) => ({ ...prev, image: '' }));
+    setWillowFormData(EMPTY_WILLOW_FORM);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -406,7 +459,7 @@ export default function AdminPage() {
       }
 
       const isUpdating = !!editingStarId;
-      const isHardball = starFormData.category.toLowerCase().includes('hardball');
+      const isHardball = starFormData.category?.toLowerCase().includes('hardball');
       const targetEndpoint = isHardball ? '/api/champions' : '/api/tapeball-stars';
 
       if (isUpdating && editingStarSource && ((isHardball && editingStarSource === 'tapeball') || (!isHardball && editingStarSource === 'champions'))) {
@@ -531,6 +584,140 @@ export default function AdminPage() {
     }
   };
 
+  // --- WILLOW GALLERY HANDLERS ---
+  const handleWillowSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedFile && !willowFormData.image) {
+      showMessage('error', 'Please upload a willow image.');
+      return;
+    }
+    setLoading(true);
+    try {
+      let finalImageUrl = willowFormData.image;
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', selectedFile);
+        const uploadData = await safeFetch('/api/upload', { method: 'POST', body: uploadFormData });
+        if (!uploadData.success && !uploadData.url) throw new Error(uploadData.error || 'Image upload failed.');
+        finalImageUrl = uploadData.url;
+      }
+
+      const data = await safeFetch('/api/willow-gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: finalImageUrl }),
+      });
+
+      if (data.success || data._id) {
+        showMessage('success', 'Willow image added successfully!');
+        setWillowFormData(EMPTY_WILLOW_FORM);
+        handleClearImage();
+        fetchWillowImages();
+        setActiveTab('manage-willow');
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteWillowClick = async (id) => {
+    if (!confirm('Delete this willow image?')) return;
+    try {
+      const data = await safeFetch(`/api/willow-gallery?id=${id}`, { method: 'DELETE' });
+      if (data.success) {
+        showMessage('success', 'Willow image deleted.');
+        fetchWillowImages();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    }
+  };
+
+  // --- DELIVERY REQUEST HANDLERS ---
+  const handleMarkDispatched = async (id, status) => {
+    try {
+      const data = await safeFetch(`/api/delivery-requests?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (data.success) {
+        showMessage('success', `Marked as ${status}.`);
+        fetchDeliveryRequests();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    }
+  };
+
+  const handleDeleteDeliveryClick = async (id) => {
+    if (!confirm('Delete this delivery request?')) return;
+    try {
+      const data = await safeFetch(`/api/delivery-requests?id=${id}`, { method: 'DELETE' });
+      if (data.success) {
+        showMessage('success', 'Request deleted.');
+        fetchDeliveryRequests();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    }
+  };
+
+  const openWhatsAppForRequest = (req) => {
+    const cleanPhone = (req.phone || '').replace(/[^0-9]/g, '');
+    const phone = cleanPhone.startsWith('92') ? cleanPhone : `92${cleanPhone.replace(/^0/, '')}`;
+    const text = encodeURIComponent(
+      `Assalam-o-Alaikum ${req.name}, aapki delivery request Kamran Sports ne receive kar li hai. ${req.product ? `Order: ${req.product}. ` : ''}Hum jald hi aapse rabta karenge.`
+    );
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+  };
+
+  // --- REVIEW HANDLERS ---
+  const handleApproveReview = async (id, approved) => {
+    try {
+      const data = await safeFetch(`/api/reviews?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved }),
+      });
+      if (data.success) {
+        showMessage('success', approved ? 'Review approved — now live on site.' : 'Review hidden.');
+        fetchReviews();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    }
+  };
+
+  const handleDeleteReviewClick = async (id) => {
+    if (!confirm('Delete this review permanently?')) return;
+    try {
+      const data = await safeFetch(`/api/reviews?id=${id}`, { method: 'DELETE' });
+      if (data.success) {
+        showMessage('success', 'Review deleted.');
+        fetchReviews();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    }
+  };
+
+  const filteredDeliveryRequests = deliveryRequests.filter((r) =>
+    deliveryStatusFilter === 'All' ? true : (r.status || 'pending') === deliveryStatusFilter
+  );
+  const pendingDeliveryCount = deliveryRequests.filter((r) => (r.status || 'pending') === 'pending').length;
+
+  const filteredReviews = reviews.filter((r) =>
+    reviewStatusFilter === 'All'
+      ? true
+      : reviewStatusFilter === 'Approved'
+      ? r.approved
+      : !r.approved
+  );
+  const pendingReviewCount = reviews.filter((r) => !r.approved).length;
+
   const filteredProducts = products.filter((p) => {
     const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
     const query = searchQuery.toLowerCase();
@@ -548,7 +735,7 @@ export default function AdminPage() {
   const outOfStockCount = products.length - inStockCount;
 
   return (
-    <div className="min-h-screen bg-white text-[#1a1a1a] font-sans antialiased">
+    <div className="min-h-screen bg-[#FAFAF7] text-[#1a1a1a] font-sans antialiased">
       <header className="bg-white border-b-4 border-[#A6362B] sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-4">
           <div className="flex items-center gap-4">
@@ -579,7 +766,7 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
         {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
             <div className="flex items-start justify-between">
               <div>
@@ -639,6 +826,30 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase text-orange-600 mb-1">Pending Deliveries</p>
+                <p className="text-3xl font-bold text-orange-700 font-mono">{pendingDeliveryCount}</p>
+              </div>
+              <div className="p-3 bg-orange-600 rounded-xl">
+                <Icon path={ICONS.package} className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase text-purple-600 mb-1">Pending Reviews</p>
+                <p className="text-3xl font-bold text-purple-700 font-mono">{pendingReviewCount}</p>
+              </div>
+              <div className="p-3 bg-purple-600 rounded-xl">
+                <Icon path={ICONS.star} className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {message.text && (
@@ -656,7 +867,7 @@ export default function AdminPage() {
         <div className="bg-[#F4F1EA] border border-[#E8E4D9] p-1.5 rounded-xl mb-8 flex flex-wrap gap-2">
           {/* Hero Section Tabs */}
           <button
-            onClick={() => setActiveTab('manage-hero')}
+            onClick={() => switchTab('manage-hero')}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'manage-hero' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
@@ -668,7 +879,7 @@ export default function AdminPage() {
           <button
             onClick={() => {
               handleCancelHeroEdit();
-              setActiveTab('add-hero');
+              switchTab('add-hero');
             }}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'add-hero' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-[#0B120D]'
@@ -680,7 +891,7 @@ export default function AdminPage() {
 
           {/* Catalog Tabs */}
           <button
-            onClick={() => setActiveTab('manage')}
+            onClick={() => switchTab('manage')}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'manage' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
@@ -692,7 +903,7 @@ export default function AdminPage() {
           <button
             onClick={() => {
               handleCancelEdit();
-              setActiveTab('add');
+              switchTab('add');
             }}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'add' ? 'bg-[#A6362B] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
@@ -704,7 +915,7 @@ export default function AdminPage() {
 
           {/* Stars Tabs */}
           <button
-            onClick={() => setActiveTab('manage-stars')}
+            onClick={() => switchTab('manage-stars')}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'manage-stars' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
@@ -716,7 +927,7 @@ export default function AdminPage() {
           <button
             onClick={() => {
               handleCancelStarEdit();
-              setActiveTab('add-star');
+              switchTab('add-star');
             }}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'add-star' ? 'bg-[#C79A44] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
@@ -724,6 +935,52 @@ export default function AdminPage() {
           >
             <Icon path={editingStarId ? ICONS.edit : ICONS.plus} className="w-4 h-4" />
             <span>{editingStarId ? 'Edit Star' : 'Add Star'}</span>
+          </button>
+
+          {/* Willow Gallery Tabs */}
+          <button
+            onClick={() => switchTab('manage-willow')}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'manage-willow' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={ICONS.image} className="w-4 h-4" />
+            <span>Willow Gallery ({willowImages.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setWillowFormData(EMPTY_WILLOW_FORM);
+              switchTab('add-willow');
+            }}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'add-willow' ? 'bg-[#C79A44] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={ICONS.plus} className="w-4 h-4" />
+            <span>Add Willow Image</span>
+          </button>
+
+          {/* Delivery Requests Tab */}
+          <button
+            onClick={() => switchTab('delivery-requests')}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'delivery-requests' ? 'bg-orange-600 text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={ICONS.package} className="w-4 h-4" />
+            <span>Delivery Requests {pendingDeliveryCount > 0 && `(${pendingDeliveryCount})`}</span>
+          </button>
+
+          {/* Reviews Tab */}
+          <button
+            onClick={() => switchTab('reviews')}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'reviews' ? 'bg-purple-600 text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={ICONS.star} className="w-4 h-4" />
+            <span>Reviews {pendingReviewCount > 0 && `(${pendingReviewCount})`}</span>
           </button>
         </div>
 
@@ -854,7 +1111,7 @@ export default function AdminPage() {
               <button
                 onClick={() => {
                   handleCancelHeroEdit();
-                  setActiveTab('add-hero');
+                  switchTab('add-hero');
                 }}
                 className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition"
               >
@@ -1275,6 +1532,204 @@ export default function AdminPage() {
                       </button>
                       <button
                         onClick={() => handleDeleteStarClick(s._id)}
+                        className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: ADD WILLOW IMAGE */}
+        {activeTab === 'add-willow' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8 max-w-xl">
+            <h2 className="font-bold text-sm uppercase text-[#0B120D] mb-6 pb-4 border-b border-[#E8E4D9]">
+              Add Willow Image
+            </h2>
+            <form onSubmit={handleWillowSubmit} className="space-y-5">
+              <div>
+                <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Willow Wood Photo</label>
+                <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  {imagePreview ? (
+                    <div className="relative group">
+                      <img src={imagePreview} alt="Preview" className="w-full h-56 object-cover rounded-lg" />
+                      <button type="button" onClick={handleClearImage}
+                        className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition">
+                        ✕ Clear Image
+                      </button>
+                    </div>
+                  ) : (
+                    <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-14 hover:bg-[#FAFAF7] transition rounded-lg">
+                      <p className="text-xs text-neutral-400 font-semibold">Upload plain willow-wood photo (Max 5MB)</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button type="submit" disabled={loading}
+                className="w-full bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold uppercase py-4 rounded-xl transition">
+                {loading ? 'Uploading...' : 'Save Willow Image'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 8: MANAGE WILLOW GALLERY */}
+        {activeTab === 'manage-willow' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9]">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Willow Gallery ({willowImages.length})</h2>
+            </div>
+            {willowImages.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-sm">No willow images added yet.</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
+                {willowImages.map((img) => (
+                  <div key={img._id} className="relative group rounded-xl overflow-hidden border border-[#E8E4D9]">
+                    <SafeImage src={img.url || img.image} alt="Willow" className="w-full h-32 object-cover" />
+                    <button
+                      onClick={() => handleDeleteWillowClick(img._id)}
+                      className="absolute top-2 right-2 bg-red-600/90 hover:bg-red-700 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 9: DELIVERY REQUESTS */}
+        {activeTab === 'delivery-requests' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Delivery Requests ({filteredDeliveryRequests.length})</h2>
+              <select
+                value={deliveryStatusFilter}
+                onChange={(e) => setDeliveryStatusFilter(e.target.value)}
+                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+              >
+                <option value="All">All Requests</option>
+                <option value="pending">Pending</option>
+                <option value="dispatched">Dispatched</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="divide-y divide-[#F0EDE4]">
+              {filteredDeliveryRequests.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">No delivery requests yet.</div>
+              ) : (
+                filteredDeliveryRequests.map((r) => {
+                  const status = r.status || 'pending';
+                  return (
+                    <div key={r._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                            status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                            status === 'dispatched' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {status}
+                          </span>
+                          {r.product && (
+                            <span className="text-[10px] font-mono font-bold text-[#A6362B]">{r.product}</span>
+                          )}
+                        </div>
+                        <h3 className="font-bold text-sm text-[#0B120D]">{r.name} — {r.phone}</h3>
+                        <p className="text-xs text-neutral-500 mt-1">{r.address}, {r.city}</p>
+                        {r.notes && <p className="text-xs text-neutral-400 mt-1 italic">"{r.notes}"</p>}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => openWhatsAppForRequest(r)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                        >
+                          WhatsApp
+                        </button>
+                        {status !== 'dispatched' && (
+                          <button
+                            onClick={() => handleMarkDispatched(r._id, 'dispatched')}
+                            className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                          >
+                            Mark Dispatched
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteDeliveryClick(r._id)}
+                          className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 10: REVIEWS */}
+        {activeTab === 'reviews' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Customer Reviews ({filteredReviews.length})</h2>
+              <select
+                value={reviewStatusFilter}
+                onChange={(e) => setReviewStatusFilter(e.target.value)}
+                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+              >
+                <option value="All">All Reviews</option>
+                <option value="Approved">Approved (Live)</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+
+            <div className="divide-y divide-[#F0EDE4]">
+              {filteredReviews.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">No reviews yet.</div>
+              ) : (
+                filteredReviews.map((r) => (
+                  <div key={r._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                          r.approved ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {r.approved ? 'Live on site' : 'Pending approval'}
+                        </span>
+                        <span className="text-[10px] font-mono text-[#C79A44] font-bold">{'★'.repeat(Number(r.rating) || 0)}</span>
+                      </div>
+                      <h3 className="font-bold text-sm text-[#0B120D]">{r.name} — {r.product}</h3>
+                      {r.comment && <p className="text-xs text-neutral-500 mt-1">{r.comment}</p>}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {!r.approved ? (
+                        <button
+                          onClick={() => handleApproveReview(r._id, true)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                        >
+                          Approve
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleApproveReview(r._id, false)}
+                          className="bg-neutral-200 hover:bg-neutral-300 text-neutral-700 text-xs font-bold px-3 py-1.5 rounded transition"
+                        >
+                          Hide
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteReviewClick(r._id)}
                         className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
                       >
                         Delete

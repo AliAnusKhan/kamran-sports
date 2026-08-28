@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import SplashScreen from '@/components/SplashScreen';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
+
+// Updated: Bracket `{}` k sath import kar diya gaya hai 
+// taake agar aap ki component files mein 'export function' use hua ho to error na aaye
+import  WillowShowcaseCard  from '@/components/WillowShowcaseCard';
+import FastDispatchCard  from '@/components/FastDispatchCard';
+import  SatisfactionReviewsCard  from '@/components/SatisfactionReviewsCard';
+
 import { useCart } from '@/context/CartContext';
 import './motion.css';
 
@@ -208,7 +215,6 @@ function StatCard({ index, value, suffix, label, copy }) {
 function DynamicCategoryCard({ cat, products, onSelect, index }) {
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
 
-  // Filter products matching this category key
   const matchingProducts = products.filter((p) => {
     const pCat = (p.category || '').toLowerCase();
     const pSub = (p.subCategory || p.type || '').toLowerCase();
@@ -227,7 +233,6 @@ function DynamicCategoryCard({ cat, products, onSelect, index }) {
     return fullText.includes(kw);
   });
 
-  // Extract all available image URLs for slideshow
   const categoryImages = matchingProducts
     .flatMap((p) => [p.image, ...(Array.isArray(p.images) ? p.images : [])])
     .filter(Boolean);
@@ -235,12 +240,11 @@ function DynamicCategoryCard({ cat, products, onSelect, index }) {
   const fallbackImg = `https://placehold.co/600x800/F4F1EA/0B120D?text=${encodeURIComponent(cat.name)}`;
   const displayImages = categoryImages.length > 0 ? categoryImages : [fallbackImg];
 
-  // Rotate images every 10-12 seconds
   useEffect(() => {
     if (displayImages.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentImgIdx((prev) => (prev + 1) % displayImages.length);
-    }, 10000 + (index % 3) * 1000); // slight offset for visual effect
+    }, 10000 + (index % 3) * 1000);
 
     return () => clearInterval(interval);
   }, [displayImages.length, index]);
@@ -251,7 +255,6 @@ function DynamicCategoryCard({ cat, products, onSelect, index }) {
       className="reveal group relative h-80 sm:h-[26rem] overflow-hidden cursor-pointer rounded-2xl border border-[#E8E4D9] shadow-sm hover:shadow-2xl transition-all duration-500"
       style={{ transitionDelay: `${index * 80}ms` }}
     >
-      {/* Background Images Crossfade */}
       {displayImages.map((imgUrl, imgI) => (
         <img
           key={imgI}
@@ -266,10 +269,8 @@ function DynamicCategoryCard({ cat, products, onSelect, index }) {
         />
       ))}
 
-      {/* Dark Overlay Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D] via-[#0B120D]/40 to-transparent opacity-85 group-hover:opacity-90 transition-opacity z-10" />
 
-      {/* Content */}
       <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 z-20">
         <div className="w-12 h-1 mb-3 transition-all duration-300 group-hover:w-20" style={{ backgroundColor: cat.accent }} />
         <h3 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-1">
@@ -280,7 +281,6 @@ function DynamicCategoryCard({ cat, products, onSelect, index }) {
         </p>
       </div>
 
-      {/* Slide Indicators */}
       {displayImages.length > 1 && (
         <div className="absolute top-4 left-4 z-20 flex gap-1.5 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
           {displayImages.slice(0, 6).map((_, dotIdx) => (
@@ -296,12 +296,69 @@ function DynamicCategoryCard({ cat, products, onSelect, index }) {
         </div>
       )}
 
-      {/* Arrow Icon */}
       <div className="absolute top-6 right-6 w-10 h-10 rounded-full border border-white/40 flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 backdrop-blur-sm bg-white/10 z-20">
         <Icon path={ICONS.arrowRight} className="w-4 h-4 text-white" />
       </div>
     </div>
   );
+}
+
+/* ═══════════════════════════════════════════
+   DOMINANT COLOR EXTRACTION
+═══════════════════════════════════════════ */
+function useDominantColors(imageUrls) {
+  const cacheRef = useRef({});
+  const [, bump] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    imageUrls.forEach((src, idx) => {
+      if (!src || cacheRef.current[idx]) return;
+
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        if (cancelled) return;
+        try {
+          const size = 24;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+
+          let r = 0, g = 0, b = 0, n = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] < 128) continue;
+            r += data[i]; g += data[i + 1]; b += data[i + 2]; n++;
+          }
+          if (!n) return;
+          r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
+
+          const max = Math.max(r, g, b), min = Math.min(r, g, b);
+          const boost = max - min < 40 ? 1 : 1.15;
+          const avg = (r + g + b) / 3;
+          r = Math.min(255, Math.max(0, Math.round(avg + (r - avg) * boost)));
+          g = Math.min(255, Math.max(0, Math.round(avg + (g - avg) * boost)));
+          b = Math.min(255, Math.max(0, Math.round(avg + (b - avg) * boost)));
+
+          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+          cacheRef.current[idx] = { rgb: `${r}, ${g}, ${b}`, luminance };
+          if (!cancelled) bump((n2) => n2 + 1);
+        } catch (err) {
+          // Cross-origin image tainted the canvas
+        }
+      };
+      img.onerror = () => {};
+      img.src = src;
+    });
+
+    return () => { cancelled = true; };
+  }, [imageUrls]);
+
+  return cacheRef.current;
 }
 
 /* ═══════════════════════════════════════════
@@ -328,6 +385,12 @@ function HomeContent() {
 
   const searchParams = useSearchParams();
   const heroRef = useRef(null);
+
+  const heroImageUrls = useMemo(
+    () => heroSlides.map((s) => s.image || s.imageUrl),
+    [heroSlides]
+  );
+  const slideAccents = useDominantColors(heroImageUrls);
 
   useEffect(() => {
     const urlCategory = searchParams.get('category') || searchParams.get('cat');
@@ -379,7 +442,6 @@ function HomeContent() {
       try {
         setLoading(true);
 
-        // Fetch products
         try {
           const resProd = await fetch('/api/products', { cache: 'no-store' });
           if (resProd.ok) {
@@ -391,7 +453,6 @@ function HomeContent() {
           console.error('Products fetch error:', e);
         }
 
-        // Fetch hero slides
         try {
           const resHero = await fetch('/api/hero-slides', { cache: 'no-store' });
           if (resHero.ok) {
@@ -403,7 +464,6 @@ function HomeContent() {
           console.error('Hero slides fetch error:', e);
         }
 
-        // Fetch brand ambassadors
         try {
           const resChamp = await fetch('/api/champions', { cache: 'no-store' });
           if (resChamp.ok) {
@@ -415,7 +475,6 @@ function HomeContent() {
           console.error('Champions fetch error:', e);
         }
 
-        // Fetch Tapeball Stars
         try {
           let resTape = await fetch('/api/tapeball-stars', { cache: 'no-store' });
           if (!resTape.ok) resTape = await fetch('/api/tapeball', { cache: 'no-store' });
@@ -517,6 +576,9 @@ function HomeContent() {
 
   const slide = heroSlides[currentSlide] || DEFAULT_HERO_SLIDES[0];
 
+  const heroAccent = slideAccents[currentSlide] || { rgb: '166, 54, 43', luminance: 92 };
+  const heroOverlayAlpha = Math.min(0.94, Math.max(0.52, 0.42 + (heroAccent.luminance / 255) * 0.5));
+
   return (
     <>
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
@@ -537,9 +599,8 @@ function HomeContent() {
 
         {!isFiltered && (
           <>
-            {/* HERO SECTION — cinematic, per-slide themed backdrop */}
+            {/* HERO SECTION */}
             <section ref={heroRef} className="relative overflow-hidden min-h-screen flex items-center">
-              {/* Themed background: each slide's own image drives the mood, crossfaded + slow Ken-Burns zoom */}
               <div className="absolute inset-0 bg-[#0B120D]">
                 {heroSlides.map((s, idx) => (
                   <div
@@ -560,19 +621,40 @@ function HomeContent() {
                 ))}
               </div>
 
-              {/* Legibility gradients tuned to brand palette, layered over the themed photo */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0B120D] via-[#0B120D]/85 sm:via-[#0B120D]/75 to-[#0B120D]/25" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D] via-transparent to-[#0B120D]/50" />
+              <div
+                className="absolute inset-0 transition-[background] duration-[1400ms] ease-out"
+                style={{
+                  background: `linear-gradient(100deg, rgba(11,18,13,${Math.min(0.97, heroOverlayAlpha + 0.1)}) 0%, rgba(11,18,13,${heroOverlayAlpha}) 48%, rgba(11,18,13,${Math.max(0.14, heroOverlayAlpha - 0.42)}) 100%)`,
+                }}
+              />
+              <div
+                className="absolute inset-0 transition-[background] duration-[1400ms] ease-out"
+                style={{
+                  background: `linear-gradient(0deg, rgba(11,18,13,${Math.min(0.95, heroOverlayAlpha + 0.06)}) 0%, rgba(11,18,13,0) 55%, rgba(11,18,13,${Math.max(0.18, heroOverlayAlpha - 0.28)}) 100%)`,
+                }}
+              />
               <div className="absolute inset-0 opacity-[0.18] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("${GRAIN_TEXTURE}")`, backgroundSize: '320px 320px' }} />
-              <div className="absolute top-1/3 right-[8%] w-[420px] h-[420px] bg-[#A6362B]/[0.16] rounded-full blur-[160px] pointer-events-none" />
-              <div className="absolute bottom-0 left-[12%] w-[320px] h-[320px] bg-[#C79A44]/[0.10] rounded-full blur-[140px] pointer-events-none" />
+
+              <div
+                className="absolute top-1/3 right-[8%] w-[420px] h-[420px] rounded-full blur-[160px] pointer-events-none transition-colors duration-[1400ms] ease-out"
+                style={{ backgroundColor: `rgba(${heroAccent.rgb}, 0.22)` }}
+              />
+              <div
+                className="absolute bottom-0 left-[12%] w-[320px] h-[320px] rounded-full blur-[140px] pointer-events-none transition-colors duration-[1400ms] ease-out"
+                style={{ backgroundColor: `rgba(${heroAccent.rgb}, 0.14)` }}
+              />
 
               <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full py-24 flex flex-col justify-between min-h-screen sm:min-h-0">
                 <div className="max-w-3xl space-y-8 mt-16 sm:mt-0">
                   <div className="overflow-hidden">
-                    <span key={`badge-${currentSlide}`} className="inline-flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.35em] text-[#C79A44] mb-2" style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                    <span key={`badge-${currentSlide}`} className="inline-flex items-center gap-2.5 text-[10px] font-mono font-bold uppercase tracking-[0.35em] text-[#C79A44] mb-2" style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
                       <span className="w-6 h-[2px] bg-[#A6362B]" />
                       {slide.badge || 'EXCLUSIVE COLLECTION'}
+                      <span
+                        className="w-2 h-2 rounded-full border border-white/40 shadow-[0_0_10px_rgba(0,0,0,0.4)] transition-colors duration-[1400ms]"
+                        style={{ backgroundColor: `rgb(${heroAccent.rgb})` }}
+                        title="Theme colour"
+                      />
                     </span>
                   </div>
 
@@ -597,7 +679,6 @@ function HomeContent() {
                   </div>
                 </div>
 
-                {/* Bottom control bar: numbered progress tabs (auto-fill) + manual arrows */}
                 <div className="flex items-end sm:items-center justify-between gap-6 sm:gap-8 pt-14 mt-14 border-t border-[#F4F1EA]/10" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
                   <div className="flex items-center gap-5 sm:gap-10 overflow-x-auto scrollbar-hide">
                     {heroSlides.map((s, idx) => (
@@ -636,7 +717,7 @@ function HomeContent() {
                 </div>
               </div>
 
-              <SeamStitch className="absolute bottom-0 left-0 w-full h-3 z-10" color="#C79A44" opacity={0.55} />
+              <SeamStitch className="absolute bottom-0 left-0 w-full h-3 z-10" color={`rgb(${heroAccent.rgb})`} opacity={0.55} />
 
               <style jsx>{`
                 @keyframes heroProgress {
@@ -651,13 +732,13 @@ function HomeContent() {
             {/* SCORECARD STRIP */}
             <section className="relative bg-[#F4F1EA] border-b border-[#E8E4D9] py-10 px-4">
               <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <StatCard index={0} value="1" suffix="" label="Grade-1 Willow" copy="Hand-selected English & Kashmir willow, pressed and shaped by master craftsmen." />
-                <StatCard index={1} value="24" suffix="H" label="Fast Dispatch" copy="Nationwide delivery with real-time tracking across Pakistan." />
-                <StatCard index={2} value="100" suffix="%" label="Satisfaction" copy="Premium quality guaranteed. Cash on delivery available." />
+                <WillowShowcaseCard />
+                <FastDispatchCard />
+                <SatisfactionReviewsCard />
               </div>
             </section>
 
-            {/* FEATURED CATEGORIES SECTION (DYNAMIC SLIDESHOW) */}
+            {/* FEATURED CATEGORIES SECTION */}
             <section className="py-24 px-4 sm:px-8 bg-white">
               <div className="max-w-7xl mx-auto">
                 <div className="reveal flex flex-col sm:flex-row justify-between items-end mb-14 gap-4">
@@ -670,7 +751,6 @@ function HomeContent() {
                   </button>
                 </div>
 
-                {/* Top Main Categories */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                   {FEATURED_CATEGORIES_LIST.slice(0, 3).map((cat, idx) => (
                     <DynamicCategoryCard
@@ -683,7 +763,6 @@ function HomeContent() {
                   ))}
                 </div>
 
-                {/* Secondary Apparel & Games Categories */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {FEATURED_CATEGORIES_LIST.slice(3).map((cat, idx) => (
                     <DynamicCategoryCard
@@ -912,53 +991,243 @@ function HomeContent() {
           </div>
         </main>
 
-        {/* BRAND HERITAGE */}
+        {/* BRAND HERITAGE — MASTERCRAFT EDITION */}
         {!isFiltered && (
-          <section className="relative bg-[#0B120D] py-28 sm:py-36 px-4 overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.16] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("${GRAIN_TEXTURE}")`, backgroundSize: '320px 320px' }} />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[640px] h-[280px] bg-[#A6362B]/[0.12] rounded-full blur-[160px] pointer-events-none" />
+          <section className="relative isolate overflow-hidden bg-[#080D0A] text-[#F4F1EA] border-y border-white/[0.08]">
+            {/* Premium ambient lighting */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[650px] rounded-full bg-[#C79A44]/[0.07] blur-[150px]" />
+              <div className="absolute -bottom-72 -left-72 w-[650px] h-[650px] rounded-full bg-[#A6362B]/[0.08] blur-[160px]" />
+              <div className="absolute -top-72 -right-72 w-[600px] h-[600px] rounded-full bg-[#C79A44]/[0.05] blur-[160px]" />
+            </div>
 
-            <div className="relative z-10 max-w-4xl mx-auto text-center">
-              <div className="reveal flex flex-col items-center gap-4 mb-10">
-                <div className="relative w-16 h-16">
-                  <SeamCircle className="w-full h-full" color="#C79A44" opacity={0.8} />
+            {/* Architectural grid */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.035]"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(244,241,234,0.8) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(244,241,234,0.8) 1px, transparent 1px)
+                `,
+                backgroundSize: '80px 80px'
+              }}
+            />
+
+            {/* Grain texture */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.10] mix-blend-soft-light"
+              style={{
+                backgroundImage: `url("${GRAIN_TEXTURE}")`,
+                backgroundSize: '320px 320px'
+              }}
+            />
+
+            {/* Oversized heritage watermark */}
+            <div className="absolute -right-8 sm:right-8 top-16 select-none pointer-events-none">
+              <span className="font-[family-name:var(--font-display)] text-[180px] sm:text-[280px] lg:text-[360px] font-black leading-none text-white/[0.018] tracking-[-0.08em]">
+                20
+              </span>
+            </div>
+
+            {/* Main content */}
+            <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-32 lg:py-40">
+              {/* Editorial header */}
+              <div className="reveal flex items-center justify-between gap-6 mb-16 sm:mb-24">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center justify-center w-9 h-9 rounded-full border border-[#C79A44]/40">
+                    <span className="w-2 h-2 rounded-full bg-[#C79A44] shadow-[0_0_12px_rgba(199,154,68,0.6)]" />
+                  </span>
+
+                  <div>
+                    <p className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.35em] text-[#C79A44]">
+                      The Heritage
+                    </p>
+                    <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-white/35 mt-1">
+                      Karachi · Pakistan
+                    </p>
+                  </div>
                 </div>
-                <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-[#C79A44]">Est. 2005 — Karachi, Pakistan</span>
+
+                <div className="hidden sm:flex items-center gap-3">
+                  <span className="h-px w-12 bg-white/15" />
+                  <span className="text-[9px] font-mono uppercase tracking-[0.3em] text-white/30">
+                    Est. 2005
+                  </span>
+                </div>
               </div>
 
-              <h2 className="reveal font-[family-name:var(--font-display)] uppercase tracking-tighter leading-[0.92] text-4xl sm:text-6xl lg:text-7xl">
-                <span className="block font-light text-[#F4F1EA]/45">We don't just make</span>
-                <span className="block font-black text-[#F4F1EA]">Bats.</span>
-                <span className="block font-light text-[#F4F1EA]/45 mt-3">We make</span>
-                <span className="block font-black text-[#C79A44]">Winners.</span>
-              </h2>
+              {/* Main editorial layout */}
+              <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-14 lg:gap-20 items-end">
+                {/* Typography */}
+                <div>
+                  <p className="reveal text-[10px] sm:text-xs font-mono uppercase tracking-[0.3em] text-[#A6362B] mb-6">
+                    Crafted by hand. Built for pressure.
+                  </p>
 
-              <div className="reveal flex items-center justify-center gap-4 mt-12">
-                <div className="h-px w-14 bg-[#A6362B]/40" />
-                <SeamStitch className="w-20 h-3" color="#A6362B" opacity={0.55} />
-                <div className="h-px w-14 bg-[#A6362B]/40" />
+                  <h2 className="reveal font-[family-name:var(--font-display)] uppercase tracking-[-0.055em] leading-[0.82] text-6xl sm:text-8xl lg:text-[8.5rem]">
+                    <span className="block font-light text-[#F4F1EA]/45">
+                      We don&apos;t just
+                    </span>
+                    <span className="block font-black text-[#F4F1EA]">
+                      make
+                    </span>
+                    <span className="relative inline-block mt-1">
+                      <span className="block font-black text-[#F4F1EA]">
+                        Bats.
+                      </span>
+                      <span className="absolute -bottom-2 left-0 w-[72%] h-[3px] bg-gradient-to-r from-[#A6362B] via-[#C79A44] to-transparent" />
+                    </span>
+                    <span className="block font-light text-[#F4F1EA]/45 mt-5">
+                      We forge
+                    </span>
+                    <span className="block font-black bg-gradient-to-r from-[#C79A44] via-[#F7E8B8] to-[#C79A44] bg-clip-text text-transparent">
+                      Winners.
+                    </span>
+                  </h2>
+                </div>
+
+                {/* Brand story */}
+                <div className="reveal lg:pb-3">
+                  <div className="w-12 h-[2px] bg-[#C79A44] mb-7" />
+                  <p className="text-base sm:text-lg lg:text-xl leading-[1.7] text-[#F4F1EA]/65 max-w-xl">
+                    For over two decades, our craftsmen have turned carefully selected
+                    willow into equipment made for moments that matter.
+                  </p>
+
+                  <p className="text-sm leading-relaxed text-white/35 max-w-lg mt-5">
+                    Every press, every grain, every finish carries the discipline of
+                    traditional craftsmanship — refined for the modern game.
+                  </p>
+
+                  <div className="flex items-center gap-4 mt-9">
+                    <div className="h-px w-16 bg-white/15" />
+                    <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-white/30">
+                      Master craftsmanship
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <p className="reveal text-[#F4F1EA]/55 text-xs sm:text-sm font-medium tracking-wide mt-8 max-w-md mx-auto leading-relaxed">
-                Two decades of pressing willow and stitching leather for players who play to win, not just to play.
-              </p>
+              {/* Heritage statistics */}
+              <div className="reveal mt-20 sm:mt-28 border-t border-white/[0.09]">
+                <div className="grid grid-cols-1 sm:grid-cols-3">
+                  {[
+                    {
+                      number: '20+',
+                      label: 'Years of Craft',
+                      text: 'Two decades of refining the art of willow.'
+                    },
+                    {
+                      number: '50K+',
+                      label: 'Players Equipped',
+                      text: 'Gear trusted across grounds throughout Pakistan.'
+                    },
+                    {
+                      number: '100%',
+                      label: 'Hand Pressed',
+                      text: 'Every willow selected, pressed and finished with care.'
+                    }
+                  ].map((stat, index) => (
+                    <div
+                      key={stat.label}
+                      className={`
+                        group relative py-9 sm:py-11
+                        ${index !== 2 ? 'sm:border-r border-white/[0.08]' : ''}
+                        ${index !== 0 ? 'border-t sm:border-t-0 border-white/[0.08]' : ''}
+                        sm:px-8
+                        transition-all duration-500
+                        hover:bg-white/[0.025]
+                      `}
+                    >
+                      {/* Index */}
+                      <span className="absolute top-5 right-6 text-[9px] font-mono text-white/20">
+                        0{index + 1}
+                      </span>
 
-              <div className="reveal flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-14">
-                {HERITAGE_BADGES.map((label) => (
-                  <div key={label} className="flex items-center gap-2 border border-[#F4F1EA]/15 rounded-full px-5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-[#F4F1EA]/75 hover:border-[#C79A44]/50 hover:text-[#C79A44] transition-colors duration-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#A6362B]" />
-                    {label}
+                      <p className="font-[family-name:var(--font-display)] text-4xl sm:text-5xl font-black tracking-tight text-[#F4F1EA] group-hover:text-[#C79A44] transition-colors duration-500">
+                        {stat.number}
+                      </p>
+
+                      <p className="mt-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#C79A44]">
+                        {stat.label}
+                      </p>
+
+                      <p className="mt-3 max-w-xs text-[11px] leading-relaxed text-white/35">
+                        {stat.text}
+                      </p>
+
+                      {/* Hover line */}
+                      <div className="absolute bottom-0 left-8 right-8 h-px bg-gradient-to-r from-[#C79A44]/0 via-[#C79A44]/40 to-[#C79A44]/0 scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-center" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Heritage badges */}
+              <div className="reveal flex flex-wrap gap-x-8 gap-y-4 mt-12 sm:mt-16">
+                {HERITAGE_BADGES.map((label, index) => (
+                  <div key={label} className="flex items-center gap-3 group">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full border border-white/15 group-hover:border-[#C79A44]/50 transition-colors">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#A6362B] group-hover:bg-[#C79A44] transition-colors" />
+                    </span>
+
+                    <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-white/45 group-hover:text-white/75 transition-colors">
+                      {label}
+                    </span>
+
+                    {index < HERITAGE_BADGES.length - 1 && (
+                      <span className="hidden sm:block w-1 h-1 rounded-full bg-white/10 ml-4" />
+                    )}
                   </div>
                 ))}
               </div>
 
-              <div className="reveal mt-10">
-                <a href={`https://wa.me/${PHONE_NUMBER}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 bg-[#A6362B] hover:bg-[#C79A44] text-white font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300 hover:shadow-[0_20px_50px_-12px_rgba(166,54,43,0.35)]">
-                  Talk to Our Gear Experts
-                  <Icon path={ICONS.arrowRight} className="w-4 h-4" />
+              {/* CTA */}
+              <div className="reveal flex flex-col sm:flex-row sm:items-center justify-between gap-8 mt-16 sm:mt-20 pt-10 border-t border-white/[0.08]">
+                <div>
+                  <p className="text-[9px] font-mono uppercase tracking-[0.3em] text-[#C79A44] mb-2">
+                    Built for your next innings
+                  </p>
+                  <p className="text-sm text-white/40">
+                    Talk to our team about your cricket gear.
+                  </p>
+                </div>
+
+                <a
+                  href={`https://wa.me/${PHONE_NUMBER}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative inline-flex items-center justify-center gap-4 bg-[#F4F1EA] text-[#080D0A] hover:bg-[#C79A44] px-8 sm:px-10 py-4 text-[10px] font-mono font-black uppercase tracking-[0.22em] transition-all duration-500 overflow-hidden"
+                >
+                  <span className="relative z-10 group-hover:text-[#080D0A] transition-colors duration-300">
+                    Speak to the Craftsmen
+                  </span>
+                  <Icon
+                    path={ICONS.arrowRight}
+                    className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300"
+                  />
+                  <span className="absolute inset-0 bg-[#C79A44] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                 </a>
               </div>
             </div>
+
+            {/* Vertical brand signature */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 hidden xl:block">
+              <div className="flex flex-col items-center gap-4">
+                <span className="w-px h-24 bg-gradient-to-b from-transparent via-[#C79A44]/40 to-transparent" />
+                <span className="text-[8px] font-mono uppercase tracking-[0.4em] text-white/20 [writing-mode:vertical-rl]">
+                  Kamran Sports
+                </span>
+                <span className="w-px h-24 bg-gradient-to-b from-transparent via-[#C79A44]/40 to-transparent" />
+              </div>
+            </div>
+
+            {/* Bottom stitch */}
+            <SeamStitch
+              className="absolute bottom-0 left-0 w-full h-3"
+              color="#C79A44"
+              opacity={0.35}
+            />
           </section>
         )}
 
