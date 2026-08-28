@@ -537,72 +537,115 @@ function HomeContent() {
 
         {!isFiltered && (
           <>
-            {/* HERO SECTION */}
+            {/* HERO SECTION — cinematic, per-slide themed backdrop */}
             <section ref={heroRef} className="relative overflow-hidden min-h-screen flex items-center">
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(102deg, #0B120D 0%, #1B120C 20%, #3B2416 38%, #6B4527 54%, #A9824F 70%, #D9C7A0 86%, #F4F1EA 100%)' }} />
-              <div className="absolute inset-0 opacity-[0.22] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("${GRAIN_TEXTURE}")`, backgroundSize: '320px 320px' }} />
-              <div className="absolute top-1/3 right-[10%] w-[380px] h-[380px] bg-[#A6362B]/[0.14] rounded-full blur-[150px] pointer-events-none" />
+              {/* Themed background: each slide's own image drives the mood, crossfaded + slow Ken-Burns zoom */}
+              <div className="absolute inset-0 bg-[#0B120D]">
+                {heroSlides.map((s, idx) => (
+                  <div
+                    key={s._id || idx}
+                    className={`absolute inset-0 transition-opacity ease-out ${
+                      idx === currentSlide ? 'opacity-100 duration-[1200ms] z-0' : 'opacity-0 duration-[800ms] z-0'
+                    }`}
+                  >
+                    <img
+                      src={s.image || s.imageUrl}
+                      alt={s.title ? s.title.replace('\n', ' ') : 'Kamran Sports'}
+                      className={`w-full h-full object-cover transition-transform duration-[7000ms] ease-out ${
+                        idx === currentSlide ? 'scale-110' : 'scale-100'
+                      }`}
+                      onError={(e) => { e.target.src = `https://placehold.co/1600x1000/0B120D/F4F1EA?text=Kamran+Sports`; }}
+                    />
+                  </div>
+                ))}
+              </div>
 
-              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full py-24">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                  <div className="lg:col-span-7 space-y-8">
-                    <div className="overflow-hidden">
-                      <span key={`badge-${currentSlide}`} className="inline-flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.35em] text-[#C79A44] mb-2" style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-                        <span className="w-6 h-[2px] bg-[#A6362B]" />
-                        {slide.badge || 'EXCLUSIVE COLLECTION'}
-                      </span>
-                    </div>
+              {/* Legibility gradients tuned to brand palette, layered over the themed photo */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0B120D] via-[#0B120D]/85 sm:via-[#0B120D]/75 to-[#0B120D]/25" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D] via-transparent to-[#0B120D]/50" />
+              <div className="absolute inset-0 opacity-[0.18] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("${GRAIN_TEXTURE}")`, backgroundSize: '320px 320px' }} />
+              <div className="absolute top-1/3 right-[8%] w-[420px] h-[420px] bg-[#A6362B]/[0.16] rounded-full blur-[160px] pointer-events-none" />
+              <div className="absolute bottom-0 left-[12%] w-[320px] h-[320px] bg-[#C79A44]/[0.10] rounded-full blur-[140px] pointer-events-none" />
 
-                    <h1 key={`title-${currentSlide}`} className="font-[family-name:var(--font-display)] text-5xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.85] text-[#F4F1EA]" style={{ animation: 'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-                      {(slide.title || '').split('\n').map((line, i) => (
-                        <span key={i} className="block">{line}</span>
-                      ))}
-                    </h1>
-
-                    <p key={`sub-${currentSlide}`} className="text-[#F4F1EA]/70 text-sm sm:text-base leading-relaxed max-w-lg" style={{ animation: 'fadeUp 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
-                      {slide.subtitle || slide.description}
-                    </p>
-
-                    <div className="flex flex-wrap gap-4 pt-4" style={{ animation: 'fadeUp 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
-                      <button onClick={() => handleCategorySelect('All')} className="group relative inline-flex items-center gap-3 bg-[#F4F1EA] hover:bg-[#A6362B] text-[#0B120D] hover:text-white font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300 hover:shadow-[0_20px_50px_-12px_rgba(166,54,43,0.35)] overflow-hidden">
-                        <span className="relative z-10">{slide.cta || 'Shop Now'}</span>
-                        <Icon path={ICONS.arrowRight} className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
-                      </button>
-                      <button onClick={() => handleCategorySelect('All')} className="inline-flex items-center gap-2 border border-[#F4F1EA]/25 hover:border-[#C79A44] hover:text-[#C79A44] text-[#F4F1EA]/85 font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300">
-                        View Collection
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-8 pt-8" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-                      {heroSlides.map((s, idx) => (
-                        <button key={s._id || idx} onClick={() => setCurrentSlide(idx)} className="group flex items-center gap-3 cursor-pointer focus:outline-none">
-                          <span className={`text-[10px] font-mono font-bold transition-colors ${currentSlide === idx ? 'text-[#C79A44]' : 'text-[#F4F1EA]/30'}`}>
-                            0{idx + 1}
-                          </span>
-                          <div className={`h-[2px] transition-all duration-500 ${currentSlide === idx ? 'w-12 bg-[#C79A44]' : 'w-6 bg-[#F4F1EA]/15 group-hover:bg-[#F4F1EA]/35'}`} />
-                        </button>
-                      ))}
-                    </div>
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full py-24 flex flex-col justify-between min-h-screen sm:min-h-0">
+                <div className="max-w-3xl space-y-8 mt-16 sm:mt-0">
+                  <div className="overflow-hidden">
+                    <span key={`badge-${currentSlide}`} className="inline-flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.35em] text-[#C79A44] mb-2" style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                      <span className="w-6 h-[2px] bg-[#A6362B]" />
+                      {slide.badge || 'EXCLUSIVE COLLECTION'}
+                    </span>
                   </div>
 
-                  <div className="hidden lg:block lg:col-span-5">
-                    <div className="relative">
-                      <div className="absolute -inset-4 bg-gradient-to-br from-[#A6362B]/10 to-[#C79A44]/15 rounded-2xl blur-xl" />
-                      <div key={`card-${currentSlide}`} className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-[#F4F1EA]/30 shadow-2xl bg-[#F4F1EA]" style={{ animation: 'fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-                        <img src={slide.image || slide.imageUrl} alt={slide.title || 'Hero Banner'} className="w-full h-full object-cover" onError={(e) => { e.target.src = `https://placehold.co/600x800/F4F1EA/0B120D?text=Kamran+Sports`; }} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/70 via-transparent to-transparent" />
-                        <div className="absolute bottom-6 left-6 right-6">
-                          <div className="text-[10px] font-mono text-[#C79A44] uppercase tracking-[0.3em] mb-2">Featured Drop</div>
-                          <div className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-white">
-                            {(slide.title || '').replace('\n', ' ')}
-                          </div>
+                  <h1 key={`title-${currentSlide}`} className="font-[family-name:var(--font-display)] text-5xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.85] text-[#F4F1EA] drop-shadow-[0_4px_30px_rgba(0,0,0,0.35)]" style={{ animation: 'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                    {(slide.title || '').split('\n').map((line, i) => (
+                      <span key={i} className="block">{line}</span>
+                    ))}
+                  </h1>
+
+                  <p key={`sub-${currentSlide}`} className="text-[#F4F1EA]/75 text-sm sm:text-base leading-relaxed max-w-lg" style={{ animation: 'fadeUp 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
+                    {slide.subtitle || slide.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-4 pt-4" style={{ animation: 'fadeUp 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
+                    <button onClick={() => handleCategorySelect('All')} className="group relative inline-flex items-center gap-3 bg-[#F4F1EA] hover:bg-[#A6362B] text-[#0B120D] hover:text-white font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300 hover:shadow-[0_20px_50px_-12px_rgba(166,54,43,0.35)] overflow-hidden">
+                      <span className="relative z-10">{slide.cta || 'Shop Now'}</span>
+                      <Icon path={ICONS.arrowRight} className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    <button onClick={() => handleCategorySelect('All')} className="inline-flex items-center gap-2 border border-[#F4F1EA]/25 hover:border-[#C79A44] hover:text-[#C79A44] text-[#F4F1EA]/85 font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300 backdrop-blur-sm">
+                      View Collection
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bottom control bar: numbered progress tabs (auto-fill) + manual arrows */}
+                <div className="flex items-end sm:items-center justify-between gap-6 sm:gap-8 pt-14 mt-14 border-t border-[#F4F1EA]/10" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+                  <div className="flex items-center gap-5 sm:gap-10 overflow-x-auto scrollbar-hide">
+                    {heroSlides.map((s, idx) => (
+                      <button key={s._id || idx} onClick={() => setCurrentSlide(idx)} className="group flex flex-col items-start gap-2.5 shrink-0 cursor-pointer focus:outline-none">
+                        <span className={`text-[10px] font-mono font-bold transition-colors ${currentSlide === idx ? 'text-[#C79A44]' : 'text-[#F4F1EA]/30'}`}>
+                          0{idx + 1}
+                        </span>
+                        <div className="relative h-[2px] w-10 sm:w-14 rounded-full bg-[#F4F1EA]/15 overflow-hidden">
+                          <span
+                            className={`absolute inset-y-0 left-0 rounded-full bg-[#C79A44] ${currentSlide === idx ? '' : 'w-0'} ${currentSlide !== idx ? 'group-hover:w-1/3 group-hover:bg-[#F4F1EA]/40 transition-all duration-300' : ''}`}
+                            style={currentSlide === idx ? { animation: paused ? 'none' : 'heroProgress 6s linear forwards', width: paused ? '100%' : undefined } : undefined}
+                          />
                         </div>
-                      </div>
-                    </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="hidden sm:flex items-center gap-3 shrink-0">
+                    <button
+                      type="button"
+                      aria-label="Previous slide"
+                      onClick={() => setCurrentSlide((currentSlide - 1 + heroSlides.length) % heroSlides.length)}
+                      className="w-11 h-11 rounded-full border border-[#F4F1EA]/25 hover:border-[#C79A44] hover:text-[#C79A44] text-[#F4F1EA]/70 flex items-center justify-center transition-all duration-300 backdrop-blur-sm"
+                    >
+                      <Icon path={ICONS.arrowRight} className="w-4 h-4 rotate-180" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next slide"
+                      onClick={() => setCurrentSlide((currentSlide + 1) % heroSlides.length)}
+                      className="w-11 h-11 rounded-full border border-[#F4F1EA]/25 hover:border-[#C79A44] hover:text-[#C79A44] text-[#F4F1EA]/70 flex items-center justify-center transition-all duration-300 backdrop-blur-sm"
+                    >
+                      <Icon path={ICONS.arrowRight} className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
-              <SeamStitch className="absolute bottom-0 left-0 w-full h-3" color="#C79A44" opacity={0.55} />
+
+              <SeamStitch className="absolute bottom-0 left-0 w-full h-3 z-10" color="#C79A44" opacity={0.55} />
+
+              <style jsx>{`
+                @keyframes heroProgress {
+                  from { width: 0%; }
+                  to { width: 100%; }
+                }
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+              `}</style>
             </section>
 
             {/* SCORECARD STRIP */}
