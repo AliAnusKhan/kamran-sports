@@ -2,60 +2,68 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-/* ------------------------------------------------------------------
-   Kamran Sports Admin — Clean Modern Light Theme
-   - Palette: Clean White, Slate Gray, Emerald (In Stock), Rose (Out of Stock), Accent Yellow (#FACC15 / Logo Color)
-   - Layout: Fixed, non-tilt standard vertical scroll layout
------------------------------------------------------------------- */
-
 const FALLBACK_IMG =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-      <rect width="100" height="100" fill="#F1F5F9"/>
-      <path d="M30 68 L50 32 L70 68 Z" fill="none" stroke="#CBD5E1" stroke-width="3"/>
-      <circle cx="50" cy="50" r="6" fill="#94A3B8"/>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+      <rect width="120" height="120" fill="#F5F3ED"/>
+      <path d="M40 80 L60 40 L80 80 Z" fill="none" stroke="#E5E1D4" stroke-width="2"/>
+      <circle cx="60" cy="60" r="5" fill="#C79A44"/>
     </svg>`
   );
 
-// Logo fallback using yellow "K" design
-const LOGO_SVG = (
-  <svg viewBox="0 0 100 100" className="w-10 h-10 shrink-0">
-    <rect width="100" height="100" rx="12" fill="#000000" />
-    <path
-      d="M20 20 H38 V45 L62 20 H82 L52 50 L85 80 H64 L38 52 V80 H20 Z"
-      fill="#FFE500"
-      stroke="#000000"
-      strokeWidth="2"
-    />
-  </svg>
-);
+const CATEGORY_MAP = {
+  'Cricket Store': [
+    'English Willow', 'Kashmir Willow', 'Tennis Bat', 'My First Kit', 'Cricket Kit',
+    'Leather Ball', 'Tennis Ball', 'Trolley', 'Wheelie Kit', 'Wheelie Duffle',
+    'Kit', 'Duffle', 'Batting Gloves', 'W.K. Gloves', 'Inner Gloves',
+    'Batting Leg Guard', 'Wicket Keeping Leg Guard', 'Elbow Guard', 'Chest Guard',
+    'Thigh Pad', 'Inner Thigh Pad', 'Abdo Guard', 'Helmets',
+  ],
+  'Shoes': ['Spike Shoes', 'Rubber Studs', 'Turf Shoes', 'Running Shoes', 'Training Shoes', 'Indoor Shoes'],
+  'Caps': ['Cricket Caps', 'Sun Hats', 'Training Caps', 'Baseball Caps', 'Visors'],
+  'Football': ['Match Footballs', 'Training Footballs', 'Futsal Balls', 'Shin Guards', 'Goalkeeper Gloves', 'Football Socks'],
+  'Shirt & Trouser': ['Cricket Whites', 'T20 Jerseys', 'Team Shirts', 'Track Trousers', 'Polo Shirts', 'Jackets', 'Compression Wear'],
+  'Indoor Games': ['Chess', 'Ludo', 'Cards', 'UNO', 'Carrom', 'Table Tennis', 'Dart Boards'],
+  'Bat Repair': ['Grip Replacement', 'Toe Guard Repair', 'Refurbishment', 'Thread Binding'],
+};
 
-const CATEGORIES = [
-  'Cricket Bats',
-  'Balls',
-  'Gloves',
-  'Pads & Protection',
-  'Helmets',
-  'Bags & Luggage',
-  'Shoes & Footwear',
-  'Clothing & Kits',
-  'Accessories',
-];
+const MAIN_CATEGORIES = Object.keys(CATEGORY_MAP);
 
-const EMPTY_FORM = {
+const EMPTY_PRODUCT_FORM = {
   productId: '',
   name: '',
   price: '',
-  category: 'Cricket Bats',
-  batType: '',
-  ballType: '',
-  gloveType: '',
-  brand: 'Kamran',
+  category: 'Cricket Store',
+  subCategory: 'English Willow',
+  brand: 'Kamran Sports',
   image: '',
   description: '',
   inStock: true,
 };
+
+const EMPTY_STAR_FORM = {
+  name: '',
+  city: '',
+  role: '',
+  category: 'Tapeball',
+  image: '',
+};
+
+async function safeFetch(url, options = {}) {
+  const res = await fetch(url, options);
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    throw new Error(`Server response error (${res.status}): ${text.substring(0, 100) || 'Empty Response'}`);
+  }
+  if (!res.ok) {
+    throw new Error(data.error || data.message || `Request failed with status ${res.status}`);
+  }
+  return data;
+}
 
 function SafeImage({ src, alt, className }) {
   const [errored, setErrored] = useState(false);
@@ -70,38 +78,109 @@ function SafeImage({ src, alt, className }) {
   );
 }
 
+function Icon({ path, className = 'w-5 h-5' }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+    </svg>
+  );
+}
+
+const ICONS = {
+  inventory: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+  stock: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+  outOfStock: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
+  plus: "M12 4v16m8-8H4",
+  edit: "M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125",
+  external: "M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25",
+  close: "M6 18L18 6M6 6l12 12",
+  package: "M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z",
+  star: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385c.116.488-.41.868-.834.613l-4.71-2.834a.563.563 0 00-.582 0l-4.71 2.834c-.423.255-.95-.125-.834-.613l1.285-5.385a.563.563 0 00-.182-.557l-4.204-3.602c-.38-.325-.178-.948.32-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z",
+};
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('manage');
-
-  const [formData, setFormData] = useState(EMPTY_FORM);
   const [products, setProducts] = useState([]);
+  const [stars, setStars] = useState([]);
+  
+  // Product Form State
+  const [formData, setFormData] = useState(EMPTY_PRODUCT_FORM);
   const [editingId, setEditingId] = useState(null);
+
+  // Star Form State
+  const [starFormData, setStarFormData] = useState(EMPTY_STAR_FORM);
+  const [editingStarId, setEditingStarId] = useState(null);
+  const [editingStarSource, setEditingStarSource] = useState(null);
+
+  // Upload & UI States
+  const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [productsLoaded, setProductsLoaded] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [starCategoryFilter, setStarCategoryFilter] = useState('All');
 
   const dismissTimer = useRef(null);
+  const fileInputRef = useRef(null);
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products');
-      const data = await res.json();
-      if (data.success) {
-        setProducts(data.data);
-      }
+      const data = await safeFetch('/api/products');
+      const list = Array.isArray(data) ? data : (data.data || data.products || []);
+      setProducts(list);
     } catch (err) {
-      console.error('Error fetching products:', err);
-    } finally {
-      setProductsLoaded(true);
+      console.error('Fetch products error:', err.message);
+    }
+  };
+
+  const fetchStars = async () => {
+    try {
+      const [championsRes, tapeballRes] = await Promise.allSettled([
+        safeFetch('/api/champions'),
+        safeFetch('/api/tapeball-stars'),
+      ]);
+
+      const extractList = (res) => {
+        if (res.status !== 'fulfilled') return [];
+        const data = res.value;
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.data)) return data.data;
+        if (data && Array.isArray(data.champions)) return data.champions;
+        if (data && Array.isArray(data.stars)) return data.stars;
+        if (data && Array.isArray(data.tapeballStars)) return data.tapeballStars;
+        return [];
+      };
+
+      const championsList = extractList(championsRes).map((item) => ({
+        ...item,
+        name: item.name || item.title || '',
+        city: item.city || item.location || '',
+        role: item.role || item.designation || '',
+        image: item.image || item.img || item.photo || '',
+        category: item.category || 'Hardball Star',
+        _source: 'champions',
+      }));
+
+      const tapeballList = extractList(tapeballRes).map((item) => ({
+        ...item,
+        name: item.name || item.title || '',
+        city: item.city || item.location || '',
+        role: item.role || item.designation || '',
+        image: item.image || item.img || item.photo || '',
+        category: item.category || 'Tapeball',
+        _source: 'tapeball',
+      }));
+
+      setStars([...championsList, ...tapeballList]);
+    } catch (err) {
+      console.error('Fetch stars error:', err.message);
     }
   };
 
   useEffect(() => {
     fetchProducts();
+    fetchStars();
     return () => dismissTimer.current && clearTimeout(dismissTimer.current);
   }, []);
 
@@ -113,104 +192,227 @@ export default function AdminPage() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    if (name === 'category') {
+      const firstSub = CATEGORY_MAP[value]?.[0] || '';
+      setFormData((prev) => ({ ...prev, category: value, subCategory: firstSub }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    }
+  };
+
+  const handleStarChange = (e) => {
+    const { name, value } = e.target;
+    setStarFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const processFile = (file) => {
+    if (file.size > 5 * 1024 * 1024) {
+      showMessage('error', 'Image size must be under 5MB.');
+      return;
+    }
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showMessage('error', 'Image size 5MB se choti honi chahiye!');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, image: reader.result }));
-      setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
+    if (file) processFile(file);
+  };
+
+  const handleClearImage = () => {
+    setSelectedFile(null);
+    setImagePreview('');
+    setFormData((prev) => ({ ...prev, image: '' }));
+    setStarFormData((prev) => ({ ...prev, image: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleEditClick = (product) => {
     setEditingId(product._id);
     setFormData({
       productId: product.productId || '',
-      name: product.name || '',
+      name: product.name || product.title || '',
       price: product.price || '',
-      category: product.category || 'Cricket Bats',
-      batType: product.batType || '',
-      ballType: product.ballType || '',
-      gloveType: product.gloveType || '',
-      brand: product.brand || 'Kamran',
+      category: product.category || 'Cricket Store',
+      subCategory: product.subCategory || product.subcategory || CATEGORY_MAP[product.category || 'Cricket Store']?.[0] || '',
+      brand: product.brand || 'Kamran Sports',
       image: product.image || '',
       description: product.description || '',
       inStock: product.inStock !== false,
     });
     setImagePreview(product.image || '');
+    setSelectedFile(null);
     setActiveTab('add');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setFormData(EMPTY_FORM);
-    setImagePreview('');
+    setFormData(EMPTY_PRODUCT_FORM);
+    handleClearImage();
   };
 
   const handleDeleteClick = async (id) => {
-    if (!confirm('Kiya aap waqai is product ko delete karna chahte hain?')) return;
+    if (!confirm('Are you sure you want to delete this product?')) return;
     try {
-      const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        showMessage('success', 'Product successfully delete ho gaya!');
+      const data = await safeFetch(`/api/products?id=${id}`, { method: 'DELETE' });
+      if (data.success || data.message) {
+        showMessage('success', 'Product deleted successfully.');
         fetchProducts();
-      } else {
-        showMessage('error', data.error);
       }
     } catch (err) {
-      showMessage('error', 'Connection Error: Delete nahi ho saka.');
+      showMessage('error', err.message);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.image) {
-      showMessage('error', 'Barae karam product ki image upload karein!');
+    if (!formData.image && !selectedFile) {
+      showMessage('error', 'Please select or upload a product image.');
       return;
     }
 
     setLoading(true);
     try {
+      let finalImageUrl = formData.image;
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', selectedFile);
+        const uploadData = await safeFetch('/api/upload', { method: 'POST', body: uploadFormData });
+        if (!uploadData.success && !uploadData.url) throw new Error(uploadData.error || 'Image upload failed.');
+        finalImageUrl = uploadData.url;
+      }
+
       const isUpdating = !!editingId;
       const method = isUpdating ? 'PUT' : 'POST';
-      const payload = isUpdating
-        ? { ...formData, _id: editingId, price: Number(formData.price) }
-        : { ...formData, price: Number(formData.price) };
 
-      const res = await fetch('/api/products', {
+      const payload = {
+        ...formData,
+        name: formData.name,
+        title: formData.name,
+        subCategory: formData.subCategory,
+        subcategory: formData.subCategory,
+        image: finalImageUrl,
+        price: Number(formData.price),
+        ...(isUpdating && { _id: editingId }),
+      };
+
+      const data = await safeFetch('/api/products', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
 
-      if (data.success) {
-        showMessage(
-          'success',
-          isUpdating ? 'Product detail update ho gayi hai!' : 'Naya product store mein add ho gaya hai!'
-        );
+      if (data.success || data.message || data._id) {
+        showMessage('success', isUpdating ? 'Product updated successfully!' : 'New product published to store!');
         handleCancelEdit();
         fetchProducts();
         setActiveTab('manage');
-      } else {
-        showMessage('error', data.error);
       }
     } catch (err) {
-      showMessage('error', 'Connection Error: Save nahi ho saka.');
+      showMessage('error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditStarClick = (star) => {
+    setEditingStarId(star._id);
+    setEditingStarSource(star._source || (star.category?.toLowerCase().includes('hardball') ? 'champions' : 'tapeball'));
+    setStarFormData({
+      name: star.name || star.title || '',
+      city: star.city || star.location || '',
+      role: star.role || star.designation || '',
+      category: star.category || (star._source === 'champions' ? 'Hardball Star' : 'Tapeball'),
+      image: star.image || star.img || star.photo || '',
+    });
+    setImagePreview(star.image || star.img || star.photo || '');
+    setSelectedFile(null);
+    setActiveTab('add-star');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelStarEdit = () => {
+    setEditingStarId(null);
+    setEditingStarSource(null);
+    setStarFormData(EMPTY_STAR_FORM);
+    handleClearImage();
+  };
+
+  const handleDeleteStarClick = async (id) => {
+    if (!confirm('Are you sure you want to delete this star?')) return;
+    try {
+      const starToDelete = stars.find((s) => s._id === id);
+      const isHardball = starToDelete?.category?.toLowerCase().includes('hardball') || starToDelete?._source === 'champions';
+      const endpoint = isHardball ? `/api/champions?id=${id}` : `/api/tapeball-stars?id=${id}`;
+
+      const data = await safeFetch(endpoint, { method: 'DELETE' });
+      if (data.success || data.message || data.ok) {
+        showMessage('success', 'Star deleted successfully.');
+        fetchStars();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    }
+  };
+
+  const handleStarSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      let finalImageUrl = starFormData.image;
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', selectedFile);
+        const uploadData = await safeFetch('/api/upload', { method: 'POST', body: uploadFormData });
+        if (!uploadData.success && !uploadData.url) throw new Error(uploadData.error || 'Image upload failed.');
+        finalImageUrl = uploadData.url;
+      }
+
+      const isUpdating = !!editingStarId;
+      const isHardball = starFormData.category.toLowerCase().includes('hardball');
+      const targetEndpoint = isHardball ? '/api/champions' : '/api/tapeball-stars';
+
+      // Switch target database if editing category changed
+      if (isUpdating && editingStarSource && ((isHardball && editingStarSource === 'tapeball') || (!isHardball && editingStarSource === 'champions'))) {
+        const oldEndpoint = editingStarSource === 'champions' ? `/api/champions?id=${editingStarId}` : `/api/tapeball-stars?id=${editingStarId}`;
+        try {
+          await safeFetch(oldEndpoint, { method: 'DELETE' });
+        } catch (e) {
+          console.warn('Old collection entry removal skipped:', e.message);
+        }
+      }
+
+      const payload = {
+        name: starFormData.name,
+        title: starFormData.name,
+        city: starFormData.city,
+        location: starFormData.city,
+        role: starFormData.role,
+        designation: starFormData.role,
+        category: starFormData.category,
+        image: finalImageUrl,
+        img: finalImageUrl,
+        photo: finalImageUrl,
+        ...(isUpdating && { _id: editingStarId }),
+      };
+
+      const data = await safeFetch(targetEndpoint, {
+        method: isUpdating && (!editingStarSource || (isHardball && editingStarSource === 'champions') || (!isHardball && editingStarSource === 'tapeball')) ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (data.success || data.message || data._id || data.id) {
+        showMessage('success', isUpdating ? 'Star updated successfully!' : 'New player saved successfully!');
+        handleCancelStarEdit();
+        fetchStars();
+        setActiveTab('manage-stars');
+      }
+    } catch (err) {
+      showMessage('error', err.message);
     } finally {
       setLoading(false);
     }
@@ -219,55 +421,34 @@ export default function AdminPage() {
   const filteredProducts = products.filter((p) => {
     const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
     const query = searchQuery.toLowerCase();
-    const matchesQuery =
-      p.name?.toLowerCase().includes(query) ||
-      p.productId?.toLowerCase().includes(query) ||
-      p._id?.toLowerCase().includes(query);
-    return matchesCategory && matchesQuery;
+    const subCat = p.subCategory || p.subcategory || '';
+    const pName = p.name || p.title || '';
+    return matchesCategory && (pName.toLowerCase().includes(query) || p.productId?.toLowerCase().includes(query) || subCat.toLowerCase().includes(query));
+  });
+
+  const filteredStars = stars.filter((s) => {
+    if (starCategoryFilter === 'All') return true;
+    return s.category?.toLowerCase().includes(starCategoryFilter.toLowerCase());
   });
 
   const inStockCount = products.filter((p) => p.inStock !== false).length;
   const outOfStockCount = products.length - inStockCount;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans antialiased overflow-x-hidden w-full select-none">
-      <style>{`
-        html, body {
-          overflow-x: hidden;
-          touch-action: pan-y;
-          overscroll-behavior-x: none;
-        }
-        img {
-          -webkit-user-drag: none;
-          user-drag: none;
-        }
-        .alert-shell { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 220ms ease, opacity 220ms ease; opacity: 0; }
-        .alert-shell.open { grid-template-rows: 1fr; opacity: 1; }
-        .alert-inner { overflow: hidden; min-height: 0; }
-      `}</style>
-
-      {/* HEADER */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs w-full">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-black border border-slate-200 shrink-0">
-              <img
-                src="/logo.jpg"
-                alt="Kamran Sports"
-                className="w-full h-full object-contain"
-                draggable="false"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'block';
-                }}
-              />
-              <div style={{ display: 'none' }}>{LOGO_SVG}</div>
+    <div className="min-h-screen bg-white text-[#1a1a1a] font-sans antialiased">
+      <header className="bg-white border-b-4 border-[#A6362B] sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-[#F4F1EA] rounded-lg p-2 flex items-center justify-center shrink-0">
+              <img src="/logo.jpg" alt="Kamran Sports" className="h-9 w-auto object-contain" />
             </div>
-            <div>
-              <h1 className="font-bold text-lg text-slate-900 tracking-tight leading-none uppercase">
+            <div className="hidden sm:block">
+              <h1 className="font-bold text-lg text-[#0B120D] tracking-wide uppercase leading-tight">
                 Kamran Sports
               </h1>
-              <p className="text-[11px] font-medium text-slate-500 mt-1 tracking-wider uppercase">Admin Portal</p>
+              <p className="text-[11px] font-medium text-[#A6362B] tracking-[0.2em] uppercase">
+                Inventory & Stars Admin
+              </p>
             </div>
           </div>
 
@@ -275,400 +456,509 @@ export default function AdminPage() {
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-lg transition border border-slate-200 flex items-center gap-1.5"
+            className="flex items-center gap-2 bg-[#0B120D] hover:bg-[#A6362B] text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all uppercase tracking-wider"
           >
             <span>Live Store</span>
-            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            <Icon path={ICONS.external} className="w-3.5 h-3.5" />
           </a>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
-        {/* SIMPLE STATS STRIP (NO EMOJIS) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Products</span>
-            <span className="block text-2xl font-bold text-slate-900 mt-1">{products.length}</span>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-5 mb-8">
+          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase text-neutral-400 mb-1">Total Products</p>
+                <p className="text-3xl font-bold text-[#0B120D] font-mono">{products.length}</p>
+              </div>
+              <div className="p-3 bg-[#0B120D] rounded-xl">
+                <Icon path={ICONS.inventory} className="w-5 h-5 text-[#C79A44]" />
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">In Stock</span>
-            <span className="block text-2xl font-bold text-emerald-600 mt-1">{inStockCount}</span>
+          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase text-emerald-600 mb-1">In Stock</p>
+                <p className="text-3xl font-bold text-emerald-700 font-mono">{inStockCount}</p>
+              </div>
+              <div className="p-3 bg-emerald-600 rounded-xl">
+                <Icon path={ICONS.stock} className="w-5 h-5 text-white" />
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
-            <span className="text-xs font-semibold uppercase tracking-wider text-rose-600">Out of Stock</span>
-            <span className="block text-2xl font-bold text-rose-600 mt-1">{outOfStockCount}</span>
+          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase text-[#A6362B] mb-1">Out of Stock</p>
+                <p className="text-3xl font-bold text-[#A6362B] font-mono">{outOfStockCount}</p>
+              </div>
+              <div className="p-3 bg-[#A6362B] rounded-xl">
+                <Icon path={ICONS.outOfStock} className="w-5 h-5 text-white" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* ALERT */}
-        <div className={`alert-shell mb-2 ${message.text ? 'open' : ''}`}>
-          <div className="alert-inner">
-            <div
-              className={`mb-6 p-4 rounded-xl text-sm font-medium flex justify-between items-center gap-3 ${
-                message.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : 'bg-rose-50 text-rose-800 border border-rose-200'
-              }`}
-            >
-              <span>{message.text}</span>
-              <button
-                onClick={() => setMessage({ type: '', text: '' })}
-                className="text-xs font-semibold underline opacity-70 hover:opacity-100 shrink-0"
-              >
-                Dismiss
-              </button>
+          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase text-[#C79A44] mb-1">Total Stars</p>
+                <p className="text-3xl font-bold text-[#0B120D] font-mono">{stars.length}</p>
+              </div>
+              <div className="p-3 bg-[#C79A44] rounded-xl">
+                <Icon path={ICONS.star} className="w-5 h-5 text-white" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* TABS */}
-        <div className="flex bg-slate-200/80 p-1 rounded-xl mb-6 border border-slate-200 max-w-md">
+        {message.text && (
+          <div className={`mb-6 rounded-xl border p-4 flex items-center justify-between ${
+            message.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-[#A6362B]'
+          }`}>
+            <p className="text-sm font-semibold">{message.text}</p>
+            <button onClick={() => setMessage({ type: '', text: '' })}>
+              <Icon path={ICONS.close} className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Tab Switcher */}
+        <div className="bg-[#F4F1EA] border border-[#E8E4D9] p-1.5 rounded-xl mb-8 flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('manage')}
-            className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition flex justify-center items-center gap-2 ${
-              activeTab === 'manage'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'manage' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            <span>Manage Products ({filteredProducts.length})</span>
+            <Icon path={ICONS.package} className="w-4 h-4" />
+            <span>Manage Catalog ({filteredProducts.length})</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('add')}
-            className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition flex justify-center items-center gap-2 ${
-              activeTab === 'add'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+            onClick={() => {
+              handleCancelEdit();
+              setActiveTab('add');
+            }}
+            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'add' ? 'bg-[#A6362B] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
+            <Icon path={editingId ? ICONS.edit : ICONS.plus} className="w-4 h-4" />
             <span>{editingId ? 'Edit Product' : 'Add Product'}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('manage-stars')}
+            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'manage-stars' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={ICONS.star} className="w-4 h-4" />
+            <span>Manage Stars ({stars.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              handleCancelStarEdit();
+              setActiveTab('add-star');
+            }}
+            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'add-star' ? 'bg-[#C79A44] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={editingStarId ? ICONS.edit : ICONS.plus} className="w-4 h-4" />
+            <span>{editingStarId ? 'Edit Star' : 'Add Star'}</span>
           </button>
         </div>
 
-        {/* TAB PANELS */}
-        <div style={{ minHeight: 520 }}>
-          {activeTab === 'add' && (
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-xs">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
-                <div>
-                  <h2 className="font-bold text-lg text-slate-900 uppercase tracking-tight">
-                    {editingId ? 'Edit Product Details' : 'Add New Product'}
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Enter product specifications and details.</p>
-                </div>
-                {editingId && (
-                  <button
-                    onClick={handleCancelEdit}
-                    className="bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition border border-slate-200 shrink-0"
-                  >
-                    Cancel Edit
-                  </button>
-                )}
-              </div>
+        {/* TAB 1: ADD PRODUCT */}
+        {activeTab === 'add' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">
+                {editingId ? 'Edit Product Details' : 'Add New Product'}
+              </h2>
+              {editingId && (
+                <button onClick={handleCancelEdit} className="text-xs text-[#A6362B] font-bold uppercase">
+                  Cancel Edit
+                </button>
+              )}
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Product ID / Code *
-                    </label>
-                    <input
-                      type="text"
-                      name="productId"
-                      value={formData.productId}
-                      onChange={handleChange}
-                      required
-                      placeholder="e.g. KS-101"
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono font-semibold rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
-                    />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Product Code *</label>
+                      <input
+                        type="text"
+                        name="productId"
+                        value={formData.productId}
+                        onChange={handleChange}
+                        required
+                        placeholder="KS-101"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm font-mono focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Product Title *</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        placeholder="Kamran Gold Edition English Willow"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Product Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      placeholder="e.g. Kamran Gold Edition English Willow"
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Price (PKR) *
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      required
-                      placeholder="22000"
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Price (PKR) *</label>
+                      <input
+                        type="number"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleChange}
+                        required
+                        placeholder="25000"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm font-mono focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Category *</label>
+                      <select
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      >
+                        {MAIN_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Subcategory *</label>
+                      <select
+                        name="subCategory"
+                        value={formData.subCategory}
+                        onChange={handleChange}
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      >
+                        {CATEGORY_MAP[formData.category]?.map((sub) => (
+                          <option key={sub} value={sub}>{sub}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Category *
-                    </label>
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
-                    >
-                      {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Brand Name
-                    </label>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Brand</label>
                     <input
                       type="text"
                       name="brand"
                       value={formData.brand}
                       onChange={handleChange}
-                      placeholder="e.g. Kamran"
-                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
+                      placeholder="Kamran Sports"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Description</label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      rows="4"
+                      placeholder="Enter specifications..."
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between bg-[#FAFAF7] p-4 rounded-lg border border-[#E0DCD1]">
+                    <span className="text-xs font-bold uppercase text-[#0B120D]">In Stock Availability</span>
+                    <input
+                      type="checkbox"
+                      name="inStock"
+                      checked={formData.inStock}
+                      onChange={handleChange}
+                      className="w-5 h-5 accent-[#A6362B] cursor-pointer"
                     />
                   </div>
                 </div>
 
-                <div style={{ minHeight: 74 }}>
-                  {formData.category === 'Cricket Bats' && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Bat Type</label>
-                      <select
-                        name="batType"
-                        value={formData.batType}
-                        onChange={handleChange}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
-                      >
-                        <option value="">Select Bat Type</option>
-                        <option value="Hardball">Hardball</option>
-                        <option value="Tapeball">Tapeball</option>
-                      </select>
-                    </div>
-                  )}
-                  {formData.category === 'Balls' && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Ball Type</label>
-                      <select
-                        name="ballType"
-                        value={formData.ballType}
-                        onChange={handleChange}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
-                      >
-                        <option value="">Select Ball Type</option>
-                        <option value="Hardball">Hardball</option>
-                        <option value="Tennis Ball">Tennis Ball</option>
-                        <option value="Leather Ball">Leather Ball</option>
-                      </select>
-                    </div>
-                  )}
-                  {formData.category === 'Gloves' && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Glove Type</label>
-                      <select
-                        name="gloveType"
-                        value={formData.gloveType}
-                        onChange={handleChange}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
-                      >
-                        <option value="">Select Glove Type</option>
-                        <option value="Hardball Gloves">Hardball Gloves</option>
-                        <option value="Tapeball Gloves">Tapeball Gloves</option>
-                        <option value="Wicket Keeping Gloves">Wicket Keeping Gloves</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Product Image *
-                  </label>
-                  <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-lg p-3">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800 file:cursor-pointer transition"
-                    />
-                    <div className="w-12 h-12 shrink-0 rounded-lg border border-slate-200 bg-white overflow-hidden">
-                      {imagePreview && (
-                        <SafeImage src={imagePreview} alt="Preview" className="w-12 h-12 object-cover" />
+                <div className="lg:col-span-4 space-y-6">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Image Upload</label>
+                    <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                      {imagePreview ? (
+                        <div className="relative group">
+                          <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
+                          <button
+                            type="button"
+                            onClick={handleClearImage}
+                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition"
+                          >
+                            ✕ Clear Image
+                          </button>
+                        </div>
+                      ) : (
+                        <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
+                          <p className="text-xs text-neutral-400 font-semibold">Click or drag image here (Max 5MB)</p>
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    rows="3"
-                    placeholder="Product details and features..."
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition resize-none"
-                  />
-                </div>
-
-                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                  <input
-                    type="checkbox"
-                    name="inStock"
-                    id="inStock"
-                    checked={formData.inStock}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-900"
-                  />
-                  <label htmlFor="inStock" className="text-xs font-bold text-slate-700 uppercase tracking-wider cursor-pointer">
-                    Mark Product as In Stock
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`w-full text-white text-xs font-bold uppercase tracking-wider py-3.5 px-4 rounded-xl shadow-xs transition disabled:bg-slate-300 ${
-                    editingId ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-900 hover:bg-slate-800'
-                  }`}
-                >
-                  {loading ? 'Saving Details…' : editingId ? 'Update Product' : 'Publish Product to Store'}
-                </button>
-              </form>
-            </div>
-          )}
-
-          {activeTab === 'manage' && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Filter Category
-                  </label>
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition"
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#A6362B] hover:bg-[#8C2C22] text-white text-xs font-bold uppercase py-4 rounded-xl transition"
                   >
-                    <option value="All">All Categories</option>
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Search ID / Name
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search product..."
-                      className="w-full bg-white border border-slate-200 text-slate-900 text-sm font-medium rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 p-2.5 outline-none transition pl-9"
-                    />
-                    <svg className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
+                    {loading ? 'Processing...' : editingId ? 'Update Product' : 'Publish Product'}
+                  </button>
                 </div>
               </div>
+            </form>
+          </div>
+        )}
 
-              {!productsLoaded ? (
-                <div className="divide-y divide-slate-100">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="p-4 sm:p-5 flex items-center gap-3.5 animate-pulse">
-                      <div className="w-14 h-14 rounded-xl bg-slate-100 shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3 w-24 bg-slate-100 rounded" />
-                        <div className="h-3 w-48 bg-slate-100 rounded" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : filteredProducts.length === 0 ? (
-                <div className="text-center py-14 px-4">
-                  <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                  <p className="text-slate-500 font-medium text-sm">Koi product match nahi hua.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {filteredProducts.map((p) => (
-                    <div key={p._id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition">
-                      <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                        <div className="w-14 h-14 shrink-0 rounded-xl border border-slate-200 bg-white overflow-hidden">
-                          <SafeImage src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="bg-slate-100 text-slate-700 text-[10px] font-mono font-bold px-2 py-0.5 rounded border border-slate-200">
-                              {p.productId || 'NO-ID'}
-                            </span>
-                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                              p.inStock !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}>
-                              {p.inStock !== false ? 'In Stock' : 'Out of Stock'}
-                            </span>
-                          </div>
-                          <h3 className="font-bold text-sm text-slate-900 uppercase mt-1 leading-tight truncate">
-                            {p.name}
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {p.category} • <span className="text-slate-900 font-bold">PKR {p.price?.toLocaleString()}</span>
-                          </p>
-                        </div>
-                      </div>
+        {/* TAB 2: MANAGE PRODUCTS */}
+        {activeTab === 'manage' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex flex-col sm:flex-row gap-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products..."
+                className="flex-1 bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+              />
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+              >
+                <option value="All">All Categories</option>
+                {MAIN_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
 
-                      <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 shrink-0">
-                        <button
-                          onClick={() => handleEditClick(p)}
-                          className="flex-1 sm:flex-none bg-slate-100 text-slate-800 hover:bg-slate-900 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition border border-slate-200"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(p._id)}
-                          className="flex-1 sm:flex-none bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white text-xs font-bold px-4 py-2 rounded-lg transition border border-rose-200"
-                        >
-                          Delete
-                        </button>
+            <div className="divide-y divide-[#F0EDE4]">
+              {filteredProducts.map((p) => (
+                <div key={p._id} className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <SafeImage src={p.image} alt={p.name || p.title} className="w-14 h-14 object-cover rounded-lg border border-[#E8E4D9]" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#0B120D] text-white text-[10px] font-mono px-2 py-0.5 rounded">{p.productId || 'N/A'}</span>
+                        <span className="text-[10px] font-bold uppercase bg-[#F0EDE4] px-2 py-0.5 rounded">{p.category}</span>
+                        <span className="text-[10px] font-bold uppercase bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded">{p.subCategory || p.subcategory}</span>
                       </div>
+                      <h3 className="font-bold text-sm text-[#0B120D] mt-1">{p.name || p.title}</h3>
+                      <p className="text-xs font-mono font-bold text-neutral-500">PKR {p.price?.toLocaleString()}</p>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditClick(p)}
+                      className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(p._id)}
+                      className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: ADD / EDIT STAR */}
+        {activeTab === 'add-star' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">
+                {editingStarId ? 'Edit Star Details' : 'Add New Player / Star'}
+              </h2>
+              {editingStarId && (
+                <button onClick={handleCancelStarEdit} className="text-xs text-[#A6362B] font-bold uppercase">
+                  Cancel Edit
+                </button>
               )}
             </div>
-          )}
-        </div>
+
+            <form onSubmit={handleStarSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Player Name *</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={starFormData.name}
+                        onChange={handleStarChange}
+                        required
+                        placeholder="e.g. Babar Azam"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">City *</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={starFormData.city}
+                        onChange={handleStarChange}
+                        required
+                        placeholder="e.g. LAHORE"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Player Role / Tag *</label>
+                      <input
+                        type="text"
+                        name="role"
+                        value={starFormData.role}
+                        onChange={handleStarChange}
+                        required
+                        placeholder="e.g. HARDBALL KING / TOP BATSMAN"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Category *</label>
+                      <select
+                        name="category"
+                        value={starFormData.category}
+                        onChange={handleStarChange}
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      >
+                        <option value="Tapeball">Tapeball Star</option>
+                        <option value="Hardball Star">Hardball Star</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-4 space-y-6">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Player Image</label>
+                    <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                      {imagePreview ? (
+                        <div className="relative group">
+                          <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
+                          <button
+                            type="button"
+                            onClick={handleClearImage}
+                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition"
+                          >
+                            ✕ Clear Image
+                          </button>
+                        </div>
+                      ) : (
+                        <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
+                          <p className="text-xs text-neutral-400 font-semibold">Upload player photo (Max 5MB)</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold uppercase py-4 rounded-xl transition"
+                  >
+                    {loading ? 'Processing...' : editingStarId ? 'Update Star' : 'Save Star'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 4: MANAGE STARS */}
+        {activeTab === 'manage-stars' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">All Registered Stars</h2>
+              <select
+                value={starCategoryFilter}
+                onChange={(e) => setStarCategoryFilter(e.target.value)}
+                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+              >
+                <option value="All">All Categories</option>
+                <option value="Tapeball">Tapeball</option>
+                <option value="Hardball">Hardball</option>
+              </select>
+            </div>
+
+            <div className="divide-y divide-[#F0EDE4]">
+              {filteredStars.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">No stars added yet.</div>
+              ) : (
+                filteredStars.map((s) => (
+                  <div key={s._id} className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <SafeImage src={s.image} alt={s.name} className="w-14 h-14 object-cover rounded-lg border border-[#E8E4D9]" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded">
+                            📍 {s.city}
+                          </span>
+                          <span className="text-[10px] font-bold uppercase bg-[#C79A44] text-white px-2 py-0.5 rounded">
+                            {s.category}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-sm text-[#0B120D] mt-1">{s.name}</h3>
+                        <p className="text-xs font-mono font-bold text-[#A6362B]">{s.role}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditStarClick(s)}
+                        className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteStarClick(s._id)}
+                        className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

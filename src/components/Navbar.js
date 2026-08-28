@@ -1,14 +1,67 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import '../app/motion.css';
 
+const AnnouncementBar = memo(function AnnouncementBar() {
+  const [typedText, setTypedText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [loopNum, setLoopNum] = useState(0);
+  const [typingSpeed, setTypingSpeed] = useState(100);
+
+  const words = [
+    'KAMRAN SPORTS — BRAND OF KARACHI',
+    '100% ORIGINAL CRICKET GEAR',
+    'PREMIUM HANDCRAFTED BATS',
+    'NATIONWIDE DELIVERY IN PAKISTAN',
+  ];
+
+  useEffect(() => {
+    const handleTyping = () => {
+      const currentWord = words[loopNum % words.length];
+      const updatedText = isDeleting
+        ? currentWord.substring(0, typedText.length - 1)
+        : currentWord.substring(0, typedText.length + 1);
+
+      setTypedText(updatedText);
+
+      if (!isDeleting && updatedText === currentWord) {
+        setTimeout(() => setIsDeleting(true), 2000);
+        setTypingSpeed(80);
+      } else if (isDeleting && updatedText === '') {
+        setIsDeleting(false);
+        setLoopNum(loopNum + 1);
+        setTypingSpeed(100);
+      }
+    };
+
+    const timer = setTimeout(handleTyping, typingSpeed);
+    return () => clearTimeout(timer);
+  }, [typedText, isDeleting, loopNum, typingSpeed]);
+
+  return (
+    <div className="bg-[#0B120D] py-2 px-3 sm:px-4 flex items-center justify-center gap-2 overflow-hidden w-full select-none">
+      <span className="shrink-0 bg-white rounded-sm p-[2px] sm:p-[3px] flex items-center justify-center">
+        <img src="/logo.jpg" alt="Kamran Sports" className="h-4 sm:h-5 w-auto object-contain" />
+      </span>
+      <div className="flex items-center gap-1 min-w-0 max-w-[75vw] sm:max-w-none overflow-hidden">
+        <span className="text-[#C79A44] font-mono text-[10px] sm:text-xs font-medium tracking-widest uppercase whitespace-nowrap truncate">
+          {typedText}
+        </span>
+        <span className="text-[#C79A44] font-medium text-xs sm:text-sm animate-pulse shrink-0">
+          |
+        </span>
+      </div>
+    </div>
+  );
+});
+
 function CartIcon({ className = '' }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l3.6-8H5.4M7 13L5.4 5M7 13l-1.7 4.6A1 1 0 006.24 19H18M9 19a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm8 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" />
     </svg>
   );
@@ -16,7 +69,7 @@ function CartIcon({ className = '' }) {
 
 function ChevronIcon({ className = '' }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
     </svg>
   );
@@ -24,7 +77,7 @@ function ChevronIcon({ className = '' }) {
 
 function SearchIcon({ className = '' }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   );
@@ -32,7 +85,7 @@ function SearchIcon({ className = '' }) {
 
 function CloseIcon({ className = '' }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
     </svg>
   );
@@ -45,7 +98,7 @@ const CATEGORY_TREE = [
     value: 'Cricket Store',
     isMegaMenu: true,
     gridCols: 'grid-cols-3',
-    dropdownWidth: 'w-[680px] xl:w-[750px]',
+    dropdownWidth: 'w-[750px] xl:w-[850px]',
     sections: [
       {
         title: 'Bats',
@@ -53,25 +106,51 @@ const CATEGORY_TREE = [
           { name: 'English Willow', value: 'English Willow' },
           { name: 'Kashmir Willow', value: 'Kashmir Willow' },
           { name: 'Tennis Bat', value: 'Tennis Bat' },
+          { name: 'My First Kit', value: 'My First Kit' },
           { name: 'Cricket Kit', value: 'Cricket Kit' },
         ],
       },
       {
-        title: 'Balls & Bags',
+        title: 'Balls',
         items: [
           { name: 'Leather Ball', value: 'Leather Ball' },
           { name: 'Tennis Ball', value: 'Tennis Ball' },
-          { name: 'Trolley Bags', value: 'Trolley' },
+        ],
+      },
+      {
+        title: 'Cricket Bags',
+        items: [
+          { name: 'Trolley', value: 'Trolley' },
+          { name: 'Wheelie Kit', value: 'Wheelie Kit' },
           { name: 'Wheelie Duffle', value: 'Wheelie Duffle' },
+          { name: 'Kit', value: 'Kit' },
+          { name: 'Duffle', value: 'Duffle' },
+        ],
+      },
+      {
+        title: 'Gloves',
+        items: [
+          { name: 'Batting Gloves', value: 'Batting Gloves' },
+          { name: 'W.K. Gloves', value: 'W.K. Gloves' },
+          { name: 'Inner Gloves', value: 'Inner Gloves' },
+        ],
+      },
+      {
+        title: 'Leg Guards',
+        items: [
+          { name: 'Batting Leg Guard', value: 'Batting Leg Guard' },
+          { name: 'Wicket Keeping Leg Guard', value: 'Wicket Keeping Leg Guard' },
         ],
       },
       {
         title: 'Protective Gear',
         items: [
-          { name: 'Batting Gloves', value: 'Batting Gloves' },
-          { name: 'Batting Leg Guard', value: 'Batting Leg Guard' },
+          { name: 'Elbow Guard', value: 'Elbow Guard' },
+          { name: 'Chest Guard', value: 'Chest Guard' },
+          { name: 'Thigh Pad', value: 'Thigh Pad' },
+          { name: 'Inner Thigh Pad', value: 'Inner Thigh Pad' },
+          { name: 'Abdo Guard', value: 'Abdo Guard' },
           { name: 'Helmets', value: 'Helmets' },
-          { name: 'Thigh & Elbow Pads', value: 'Thigh Pad' },
         ],
       },
     ],
@@ -97,6 +176,55 @@ const CATEGORY_TREE = [
           { name: 'Running Shoes', value: 'Running Shoes' },
           { name: 'Gym & Training Shoes', value: 'Training Shoes' },
           { name: 'Indoor Court Shoes', value: 'Indoor Shoes' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'Caps',
+    value: 'Caps',
+    isMegaMenu: true,
+    gridCols: 'grid-cols-2',
+    dropdownWidth: 'w-[400px]',
+    sections: [
+      {
+        title: 'Cricket & Field Caps',
+        items: [
+          { name: 'Cricket Caps', value: 'Cricket Caps' },
+          { name: 'Sun Hats & Floppy', value: 'Sun Hats' },
+          { name: 'Training Caps', value: 'Training Caps' },
+        ],
+      },
+      {
+        title: 'Casual Headwear',
+        items: [
+          { name: 'Baseball Caps', value: 'Baseball Caps' },
+          { name: 'Sports Visors', value: 'Visors' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'Football',
+    value: 'Football',
+    isMegaMenu: true,
+    gridCols: 'grid-cols-2',
+    dropdownWidth: 'w-[420px]',
+    sections: [
+      {
+        title: 'Footballs',
+        items: [
+          { name: 'Match Footballs', value: 'Match Footballs' },
+          { name: 'Training Footballs', value: 'Training Footballs' },
+          { name: 'Futsal Balls', value: 'Futsal Balls' },
+        ],
+      },
+      {
+        title: 'Gear & Accessories',
+        items: [
+          { name: 'Shin Guards', value: 'Shin Guards' },
+          { name: 'Goalkeeper Gloves', value: 'Goalkeeper Gloves' },
+          { name: 'Football Socks', value: 'Football Socks' },
         ],
       },
     ],
@@ -153,7 +281,25 @@ const CATEGORY_TREE = [
       },
     ],
   },
-  { name: 'Bat repair', value: 'Bat Repair', isSpecial: true },
+  {
+    name: 'Bat Repair',
+    value: 'Bat Repair',
+    isMegaMenu: true,
+    isSpecial: true,
+    gridCols: 'grid-cols-1',
+    dropdownWidth: 'w-[250px]',
+    sections: [
+      {
+        title: 'Repair Services',
+        items: [
+          { name: 'Grip Replacement', value: 'Grip Replacement' },
+          { name: 'Toe Guard Repair', value: 'Toe Guard Repair' },
+          { name: 'Refurbishment', value: 'Refurbishment' },
+          { name: 'Thread Binding', value: 'Thread Binding' },
+        ],
+      },
+    ],
+  },
 ];
 
 export default function Navbar({
@@ -172,7 +318,6 @@ export default function Navbar({
   const [mounted, setMounted] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [openMobileSection, setOpenMobileSection] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
   const [cartBump, setCartBump] = useState(false);
   const navRef = useRef(null);
   const prevTotalRef = useRef(0);
@@ -181,39 +326,17 @@ export default function Navbar({
   const currentSearch = setSearchTerm ? searchTerm : internalSearch;
 
   const handleSearchChange = (value) => {
-    if (setSearchTerm) {
-      setSearchTerm(value);
-    } else {
-      setInternalSearch(value);
-    }
-    if (pathname !== '/') router.push('/');
+    if (setSearchTerm) setSearchTerm(value);
+    else setInternalSearch(value);
+    if (pathname !== '/products') router.push('/products');
   };
 
   const handleClearSearch = () => {
     handleSearchChange('');
   };
 
-  const [typedText, setTypedText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [loopNum, setLoopNum] = useState(0);
-  const [typingSpeed, setTypingSpeed] = useState(100);
-
-  const words = [
-    'KAMRAN SPORTS — BRAND OF KARACHI',
-    '100% ORIGINAL CRICKET GEAR',
-    'PREMIUM HANDCRAFTED BATS',
-    'NATIONWIDE DELIVERY IN PAKISTAN',
-  ];
-
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -227,29 +350,6 @@ export default function Navbar({
   }, [totalItems, mounted]);
 
   useEffect(() => {
-    const handleTyping = () => {
-      const currentWord = words[loopNum % words.length];
-      const updatedText = isDeleting
-        ? currentWord.substring(0, typedText.length - 1)
-        : currentWord.substring(0, typedText.length + 1);
-
-      setTypedText(updatedText);
-
-      if (!isDeleting && updatedText === currentWord) {
-        setTimeout(() => setIsDeleting(true), 2000);
-        setTypingSpeed(80);
-      } else if (isDeleting && updatedText === '') {
-        setIsDeleting(false);
-        setLoopNum(loopNum + 1);
-        setTypingSpeed(100);
-      }
-    };
-
-    const timer = setTimeout(handleTyping, typingSpeed);
-    return () => clearInterval(timer);
-  }, [typedText, isDeleting, loopNum, typingSpeed]);
-
-  useEffect(() => {
     function handleClickOutside(e) {
       if (navRef.current && !navRef.current.contains(e.target)) {
         setOpenDropdown(null);
@@ -259,53 +359,47 @@ export default function Navbar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const navigateHome = () => {
-    if (pathname !== '/') router.push('/');
-  };
+  // UPDATED: Proper handling of main category vs subcategory query parameters
+  const handleSubClick = (subValue, mainCategory = null) => {
+    if (typeof setActiveCategory === 'function') {
+      setActiveCategory(subValue);
+    }
 
-  const handleSubClick = (subValue) => {
-    if (typeof setActiveCategory === 'function') setActiveCategory(subValue);
+    if (typeof setBatTypeFilter === 'function') {
+      setBatTypeFilter(['English Willow', 'Kashmir Willow', 'Tennis Bat'].includes(subValue) ? subValue : 'All');
+    }
+    if (typeof setBallTypeFilter === 'function') {
+      setBallTypeFilter(['Leather Ball', 'Tennis Ball'].includes(subValue) ? subValue : 'All');
+    }
+    if (typeof setGloveTypeFilter === 'function') {
+      setGloveTypeFilter(['Batting Gloves', 'W.K. Gloves', 'Inner Gloves'].includes(subValue) ? subValue : 'All');
+    }
+
     setMobileMenuOpen(false);
     setOpenDropdown(null);
     setOpenMobileSection(null);
-    navigateHome();
+
+    if (subValue === 'All') {
+      router.push('/products');
+    } else if (mainCategory && mainCategory !== subValue) {
+      // Direct push with both category and subcategory
+      router.push(`/products?category=${encodeURIComponent(mainCategory)}&subcategory=${encodeURIComponent(subValue)}`);
+    } else {
+      // Direct push for top-level category click
+      router.push(`/products?category=${encodeURIComponent(subValue)}`);
+    }
   };
 
   return (
-    <header
-      className={`w-[#100%] sticky top-0 z-50 border-b transition-all duration-300 ${
-        scrolled
-          ? 'bg-white/85 backdrop-blur-md border-[#D9D4C4] shadow-md'
-          : 'bg-white border-[#D9D4C4] shadow-sm'
-      }`}
-    >
-      {/* ANNOUNCEMENT BAR (FIXED FOR OVERFLOW) */}
-      <div className="bg-[#0B120D] py-2 px-3 sm:px-4 flex items-center justify-center gap-2 overflow-hidden w-full">
-        <span className="shrink-0 bg-white rounded-sm p-[2px] sm:p-[3px] flex items-center justify-center">
-          <img src="/logo.jpg" alt="Kamran Sports Karachi" className="h-4 sm:h-5 w-auto object-contain" />
-        </span>
-        <div className="flex items-center gap-1 min-w-0 max-w-[75vw] sm:max-w-none overflow-hidden">
-          <span className="text-[#C79A44] font-[family-name:var(--font-mono,'IBM_Plex_Mono',monospace)] text-[10px] sm:text-xs font-medium tracking-[0.1em] sm:tracking-[0.15em] uppercase whitespace-nowrap truncate">
-            {typedText}
-          </span>
-          <span className="text-[#C79A44] font-medium text-xs sm:text-sm animate-pulse shrink-0" aria-hidden="true">
-            |
-          </span>
-        </div>
-      </div>
+    <header className="w-full sticky top-0 z-50 bg-white border-b border-[#D9D4C4] shadow-sm">
+      <AnnouncementBar />
 
-      {/* MAIN NAVIGATION */}
-      <div
-        className={`max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-2 lg:gap-4 transition-all duration-300 ${
-          scrolled ? 'py-2' : 'py-3'
-        }`}
-      >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 lg:gap-4">
         <div className="flex items-center gap-3 sm:gap-4 shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2 -ml-2 text-[#0B120D] hover:text-[#A6362B] transition cursor-pointer"
             aria-label="Toggle menu"
-            aria-expanded={mobileMenuOpen}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {mobileMenuOpen ? (
@@ -317,103 +411,83 @@ export default function Navbar({
           </button>
 
           <Link href="/" className="flex items-center">
-            <img
-              src="/logo.jpg"
-              alt="Kamran Sports Karachi"
-              className={`logo-tilt w-auto object-contain transition-[height] duration-300 ${
-                scrolled ? 'h-8 sm:h-10' : 'h-10 sm:h-13'
-              }`}
-            />
+            <img src="/logo.jpg" alt="Kamran Sports Karachi" className="logo-tilt h-10 sm:h-12 w-auto object-contain" />
           </Link>
         </div>
 
         {/* Desktop Navigation */}
-        <nav ref={navRef} className="hidden lg:flex items-center gap-3 xl:gap-5 text-xs xl:text-sm font-semibold uppercase tracking-wide">
+        <nav ref={navRef} className="hidden lg:flex items-center gap-2 xl:gap-4 text-xs xl:text-sm font-semibold uppercase tracking-wide">
           {CATEGORY_TREE.map((cat) => {
-            if (cat.isSpecial) {
-              return (
-                <button
-                  key={cat.name}
-                  onClick={() => handleSubClick(cat.value)}
-                  className="bg-[#A6362B] hover:bg-[#8C2C22] text-white px-3 py-1.5 rounded-sm text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shrink-0"
-                >
-                  {cat.name}
-                </button>
-              );
-            }
+            const isOpen = openDropdown === cat.name;
 
-            if (cat.isMegaMenu) {
-              const isOpen = openDropdown === cat.name;
-              return (
-                <div
-                  key={cat.name}
-                  className="relative"
-                  onMouseEnter={() => setOpenDropdown(cat.name)}
-                  onMouseLeave={() => setOpenDropdown(null)}
-                >
+            return (
+              <div
+                key={cat.name}
+                className="relative"
+                onMouseEnter={() => setOpenDropdown(cat.name)}
+                onMouseLeave={() => setOpenDropdown(null)}
+              >
+                {cat.isSpecial ? (
+                  <button
+                    onClick={() => handleSubClick(cat.value)}
+                    className="bg-[#A6362B] hover:bg-[#8C2C22] text-white px-3 py-1.5 rounded-sm text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                  >
+                    {cat.name}
+                    {cat.isMegaMenu && <ChevronIcon className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
+                  </button>
+                ) : (
                   <button
                     onClick={() => handleSubClick(cat.value)}
                     className="relative pb-2 pt-1 flex items-center gap-1 cursor-pointer transition-colors text-[#0B120D] hover:text-[#A6362B] whitespace-nowrap"
                   >
                     {cat.name}
-                    <ChevronIcon className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    {cat.isMegaMenu && <ChevronIcon className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
                   </button>
+                )}
 
-                  {/* MEGA MENU DROPDOWN */}
-                  {isOpen && (
-                    <div className={`absolute top-full -left-4 pt-2 z-50 ${cat.dropdownWidth}`}>
-                      <div className={`bg-white border border-[#D9D4C4] rounded-sm shadow-2xl p-6 grid ${cat.gridCols} gap-6`}>
-                        {cat.sections.map((section) => (
-                          <div key={section.title} className="space-y-2">
-                            <h4 className="text-xs font-bold text-[#0B120D] uppercase border-b border-[#D9D4C4] pb-1.5 tracking-wider">
-                              {section.title}
-                            </h4>
-                            <ul className="space-y-1">
-                              {section.items.map((item) => (
-                                <li key={item.name}>
-                                  <button
-                                    onClick={() => handleSubClick(item.value)}
-                                    className="text-xs font-normal text-neutral-600 hover:text-[#A6362B] transition-colors py-0.5 block normal-case cursor-pointer text-left"
-                                  >
-                                    {item.name}
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
+                {cat.isMegaMenu && isOpen && (
+                  <div className={`absolute top-full -left-4 pt-2 z-50 ${cat.dropdownWidth}`}>
+                    <div className={`bg-white border border-[#D9D4C4] rounded-sm shadow-2xl p-6 grid ${cat.gridCols} gap-6`}>
+                      {cat.sections.map((section) => (
+                        <div key={section.title} className="space-y-2">
+                          <h4 className="text-xs font-bold text-[#0B120D] uppercase border-b border-[#D9D4C4] pb-1.5 tracking-wider">
+                            {section.title}
+                          </h4>
+                          <ul className="space-y-1">
+                            {section.items.map((item) => (
+                              <li key={item.name}>
+                                <button
+                                  onClick={() => handleSubClick(item.value, cat.value)}
+                                  className="text-xs font-normal text-neutral-600 hover:text-[#A6362B] transition-colors py-0.5 block normal-case cursor-pointer text-left w-full"
+                                >
+                                  {item.name}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
-              );
-            }
-
-            return (
-              <button
-                key={cat.name}
-                onClick={() => handleSubClick(cat.value)}
-                className="pb-2 pt-1 text-[#0B120D] hover:text-[#A6362B] transition-colors cursor-pointer whitespace-nowrap"
-              >
-                {cat.name}
-              </button>
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
 
         {/* Search & Cart */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="hidden md:flex items-center relative w-36 lg:w-44 xl:w-52">
+          <div className="hidden md:flex items-center relative w-28 lg:w-32 xl:w-36">
             <input
               type="text"
-              placeholder="Search bats, gear..."
+              placeholder="Search..."
               value={currentSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full bg-[#F1EFE6] border border-[#D9D4C4] text-xs px-3 py-2 pl-8 pr-7 rounded-sm focus:outline-none focus:border-[#A6362B] text-[#0B120D] placeholder-neutral-500 transition-all"
+              className="w-full bg-[#F1EFE6] border border-[#D9D4C4] text-xs px-2.5 py-1.5 pl-7 pr-6 rounded-sm focus:outline-none focus:border-[#A6362B] text-[#0B120D] placeholder-neutral-500 transition-all"
             />
-            <SearchIcon className="w-3.5 h-3.5 absolute left-2.5 text-neutral-500 pointer-events-none" />
+            <SearchIcon className="w-3.5 h-3.5 absolute left-2 text-neutral-500 pointer-events-none" />
             {currentSearch && (
-              <button onClick={handleClearSearch} className="absolute right-2 text-neutral-400 hover:text-[#A6362B]">
+              <button onClick={handleClearSearch} className="absolute right-1.5 text-neutral-400 hover:text-[#A6362B]">
                 <CloseIcon className="w-3.5 h-3.5" />
               </button>
             )}
@@ -432,7 +506,7 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* MOBILE DRAWER (POSITIONS FIXED TO PREVENT SHIFT) */}
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden absolute top-full left-0 right-0 w-full bg-[#0B120D] text-white py-4 px-5 border-t border-white/10 space-y-3 shadow-2xl max-h-[80vh] overflow-y-auto z-50">
           <div className="relative w-full pb-1">
@@ -468,7 +542,7 @@ export default function Navbar({
                             {sec.items.map((item) => (
                               <button
                                 key={item.name}
-                                onClick={() => handleSubClick(item.value)}
+                                onClick={() => handleSubClick(item.value, cat.value)}
                                 className="w-full text-left px-2 py-1 text-xs text-neutral-400 hover:text-white block normal-case"
                               >
                                 {item.name}

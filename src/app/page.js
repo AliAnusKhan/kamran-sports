@@ -1,78 +1,128 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import SplashScreen from '@/components/SplashScreen';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { useCart } from '@/context/CartContext';
-// Fonts, design tokens, and every keyframe/utility class used below (reveal,
-// tilt-card, sheen, magnetic-btn, seam-anim, cart-bounce, nav-dropdown, etc.)
-// live in this single stylesheet. Keeping it as a real CSS import — instead
-// of a styled-jsx <style> tag — avoids the dev-mode hydration mismatch that
-// styled-jsx's scope-id can produce (server/client compiling the same
-// component to different "jsx-xxxx" class hashes).
 import './motion.css';
 
 const PHONE_NUMBER = '923123623584';
 
-/* Cricket-ball seam divider, kept as the site's signature motif */
-function SeamStitch({ className = '', color = '#A6362B', opacity = 0.9, animated = false }) {
+/* ═══════════════════════════════════════════
+   DEFAULT FALLBACK DATA
+═══════════════════════════════════════════ */
+const DEFAULT_HERO_SLIDES = [
+  {
+    _id: 'hero-1',
+    badge: 'CRAFTED FOR CHAMPIONS',
+    title: 'English Willow\nMaster Edition',
+    subtitle: 'Hand-pressed Grade 1 willow bats. Limited drop — only 50 pieces crafted this season.',
+    cta: 'Shop Bats',
+    link: '#collection',
+    image: '/hero/slide-bat.jpg',
+  },
+  {
+    _id: 'hero-2',
+    badge: 'PRO GEAR',
+    title: 'Armor Up\nFor Battle',
+    subtitle: 'Professional pads, gloves & helmets. Lightweight protection trusted by international players.',
+    cta: 'Shop Protection',
+    link: '#collection',
+    image: '/hero/slide-[#A6362B]ection.jpg',
+  },
+  {
+    _id: 'hero-3',
+    badge: 'ALL SPORTS',
+    title: 'Beyond The\nBoundary',
+    subtitle: 'Football, swimming, indoor games — complete sporting destination under one roof.',
+    cta: 'Explore All',
+    link: '#collection',
+    image: '/hero/slide-multi.jpg',
+  },
+  {
+    _id: 'hero-4',
+    badge: 'STEP UP YOUR GAME',
+    title: 'Spike Into\nAction',
+    subtitle: 'Cricket & football footwear engineered for grip, speed and support on any pitch.',
+    cta: 'Shop Footwear',
+    link: '#collection',
+    image: '/hero/slide-footwear.jpg',
+  },
+  {
+    _id: 'hero-5',
+    badge: 'GIFT A LEGEND',
+    title: 'Kits Built\nFor Teams',
+    subtitle: 'Bulk team kits, custom jerseys and accessories — outfit your whole squad in one order.',
+    cta: 'Shop Team Kits',
+    link: '#collection',
+    image: '/hero/slide-team.jpg',
+  },
+];
+
+const DEFAULT_CHAMPIONS = [
+  { _id: 'c1', name: 'Babar Azam', role: 'Captain Pakistan', image: '/champions/babar.jpg' },
+  { _id: 'c2', name: 'Shaheen Afridi', role: 'Fast Bowler', image: '/champions/shaheen.jpg' },
+  { _id: 'c3', name: 'Mohammad Rizwan', role: 'Wicket Keeper', image: '/champions/rizwan.jpg' },
+  { _id: 'c4', name: 'Shadab Khan', role: 'All Rounder', image: '/champions/shadab.jpg' },
+];
+
+const DEFAULT_TAPEBALL_STARS = [
+  { _id: 't1', name: 'Asif Ali', role: 'Tapeball King', location: 'Karachi', image: '/tapeball-stars/asif.jpg' },
+  { _id: 't2', name: 'Nadeem Khan', role: 'Hard Hitter', location: 'Lahore', image: '/tapeball-stars/nadeem.jpg' },
+  { _id: 't3', name: 'Faisal Sixer', role: 'Six Hitter', location: 'Rawalpindi', image: '/tapeball-stars/faisal.jpg' },
+  { _id: 't4', name: 'Bilal Yorker', role: 'Yorker Specialist', location: 'Faisalabad', image: '/tapeball-stars/bilal.jpg' },
+];
+
+const HERITAGE_BADGES = [
+  'Custom Willow Pressing',
+  'Nationwide Cash on Delivery',
+  '24H Fast Dispatch',
+];
+
+const GRAIN_TEXTURE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
+
+/* ═══════════════════════════════════════════
+   UTILITY COMPONENTS
+═══════════════════════════════════════════ */
+function SeamStitch({ className = '', color = '#A6362B', opacity = 0.9 }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 400 10"
-      preserveAspectRatio="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
+    <svg className={className} viewBox="0 0 400 10" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 5 Q 12.5 1, 25 5 T 50 5 T 75 5 T 100 5 T 125 5 T 150 5 T 175 5 T 200 5 T 225 5 T 250 5 T 275 5 T 300 5 T 325 5 T 350 5 T 375 5 T 400 5"
+        stroke={color} strokeWidth="1.4" fill="none" strokeDasharray="2.5 5" strokeLinecap="round" opacity={opacity} />
+    </svg>
+  );
+}
+
+function SeamCircle({ className = '', color = '#C79A44', opacity = 0.7 }) {
+  return (
+    <svg className={className} viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="47" fill="none" stroke={color} strokeWidth="1.2" opacity={opacity * 0.5} />
       <path
-        d="M0 5 Q 12.5 1, 25 5 T 50 5 T 75 5 T 100 5 T 125 5 T 150 5 T 175 5 T 200 5 T 225 5 T 250 5 T 275 5 T 300 5 T 325 5 T 350 5 T 375 5 T 400 5"
-        stroke={color}
-        strokeWidth="1.4"
-        fill="none"
-        strokeDasharray="2.5 5"
-        strokeLinecap="round"
-        opacity={opacity}
-        className={animated ? 'seam-anim' : ''}
+        d="M50 6 Q 58 25 50 44 T 50 82 T 50 94"
+        fill="none" stroke={color} strokeWidth="1.4" strokeDasharray="2.2 4" strokeLinecap="round" opacity={opacity}
       />
     </svg>
   );
 }
 
-/* A small CSS-only "3D" cricket ball used as an ambient hero prop */
-function CricketBallOrb({ className = '', size = 120 }) {
+function Icon({ path, className = 'w-5 h-5' }) {
   return (
-    <div
-      className={className}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background:
-          'radial-gradient(circle at 32% 28%, #d8503f 0%, #a6362b 42%, #6e211a 78%, #4a1611 100%)',
-        boxShadow: '0 30px 60px -20px rgba(166,54,43,0.55), inset -10px -14px 24px rgba(0,0,0,0.45), inset 8px 10px 16px rgba(255,255,255,0.18)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-      aria-hidden="true"
-    >
-      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
-        <path d="M50 2 Q 30 25 30 50 Q 30 75 50 98" stroke="#f1efe6" strokeWidth="1.6" fill="none" strokeDasharray="2 3" opacity="0.85" />
-        <path d="M50 2 Q 70 25 70 50 Q 70 75 50 98" stroke="#f1efe6" strokeWidth="1.6" fill="none" strokeDasharray="2 3" opacity="0.85" />
-      </svg>
-    </div>
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+    </svg>
   );
 }
 
-/* Reveal-on-scroll wrapper using IntersectionObserver (no extra deps).
-   IMPORTANT: takes a deps array so it re-scans the DOM after the product
-   grid actually renders. Product cards don't exist yet on first mount
-   (they're still "loading"), so an empty deps array here would observe
-   zero cards and they'd sit at opacity:0 forever — that's what made the
-   images disappear. Re-running once `loading`/the product list settles
-   picks up the newly rendered .reveal cards. */
+const ICONS = {
+  arrowRight: "M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3",
+  location: "M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z",
+};
+
 function useRevealObserver(deps = []) {
   useEffect(() => {
     const els = document.querySelectorAll('.reveal, .reveal-flip');
@@ -86,16 +136,14 @@ function useRevealObserver(deps = []) {
           }
         });
       },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 
-/* Lightweight count-up for the scorecard strip numbers */
-function useCountUp(ref, target, { duration = 1400, decimals = 0 } = {}) {
+function useCountUp(ref, target, { duration = 1400 } = {}) {
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof target !== 'number') return;
@@ -107,8 +155,7 @@ function useCountUp(ref, target, { duration = 1400, decimals = 0 } = {}) {
           const tick = (now) => {
             const p = Math.min(1, (now - start) / duration);
             const eased = 1 - Math.pow(1 - p, 3);
-            const val = target * eased;
-            el.textContent = decimals ? val.toFixed(decimals) : Math.round(val).toString();
+            el.textContent = Math.round(target * eased).toString();
             if (p < 1) requestAnimationFrame(tick);
           };
           requestAnimationFrame(tick);
@@ -119,46 +166,9 @@ function useCountUp(ref, target, { duration = 1400, decimals = 0 } = {}) {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [ref, target, duration, decimals]);
+  }, [ref, target, duration]);
 }
 
-/* Imperative 3D tilt — mutates transform directly on the hovered node so
-   hovering never triggers a React re-render. Skipped on touch devices
-   and when the user prefers reduced motion. */
-function useTiltHandlers({ max = 10, scale = 1.02 } = {}) {
-  const enabled = useRef(true);
-
-  useEffect(() => {
-    const coarse = window.matchMedia('(pointer: coarse)').matches;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    enabled.current = !coarse && !reduced;
-  }, []);
-
-  const onMouseMove = useCallback(
-    (e) => {
-      if (!enabled.current) return;
-      const card = e.currentTarget;
-      const rect = card.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width - 0.5;
-      const py = (e.clientY - rect.top) / rect.height - 0.5;
-      const rotY = px * max * 2;
-      const rotX = -py * max * 2;
-      card.style.transform = `perspective(900px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(${scale})`;
-      card.style.boxShadow = `${-rotY}px ${18 - rotX}px 34px -12px rgba(11,18,13,0.35)`;
-    },
-    [max, scale]
-  );
-
-  const onMouseLeave = useCallback((e) => {
-    const card = e.currentTarget;
-    card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)';
-    card.style.boxShadow = '';
-  }, []);
-
-  return { onMouseMove, onMouseLeave };
-}
-
-/* One scorecard stat, with count-up + flip-in reveal */
 function StatCard({ index, value, suffix, label, copy }) {
   const numRef = useRef(null);
   const numeric = parseFloat(value);
@@ -166,31 +176,32 @@ function StatCard({ index, value, suffix, label, copy }) {
   useCountUp(numRef, hasNumber ? numeric : null);
 
   return (
-    <div
-      className="reveal-flip p-5 flex items-center gap-4 bg-[#F1EFE6] border border-[#D9D4C4] rounded-lg hover:border-[#A6362B]/50 hover:shadow-lg transition-shadow duration-300"
-      style={{ transitionDelay: `${index * 90}ms` }}
-    >
-      <div className="font-[family-name:var(--font-mono)] text-sm font-semibold text-[#A6362B] shrink-0 tabular-nums border border-[#A6362B]/30 rounded px-2 py-1 min-w-[64px] text-center">
-        {hasNumber ? (
-          <>
-            <span ref={numRef}>0</span>
-            {suffix}
-          </>
-        ) : (
-          value
-        )}
-      </div>
-      <div>
-        <h4 className="text-xs font-black uppercase tracking-wider text-[#0B120D]">{label}</h4>
-        <p className="text-[11px] text-neutral-500 font-medium mt-0.5">{copy}</p>
+    <div className="reveal-flip group p-6 bg-white border border-[#E8E4D9] rounded-xl hover:border-[#A6362B]/30 hover:shadow-lg transition-all duration-300" style={{ transitionDelay: `${index * 90}ms` }}>
+      <div className="flex items-center gap-4">
+        <div className="shrink-0 w-12 h-12 rounded-xl bg-[#A6362B]/[0.06] border border-[#A6362B]/15 flex items-center justify-center">
+          <span className="font-mono text-base font-bold text-[#A6362B]">
+            {hasNumber ? <span ref={numRef}>0</span> : value}{suffix}
+          </span>
+        </div>
+        <div>
+          <h4 className="text-[11px] font-black uppercase tracking-[0.15em] text-[#0B120D]">{label}</h4>
+          <p className="text-[11px] text-neutral-500 font-medium mt-1 leading-relaxed">{copy}</p>
+        </div>
       </div>
     </div>
   );
 }
 
-export default function Home() {
+/* ═══════════════════════════════════════════
+   MAIN HOME CONTENT
+═══════════════════════════════════════════ */
+function HomeContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [products, setProducts] = useState([]);
+  const [heroSlides, setHeroSlides] = useState(DEFAULT_HERO_SLIDES);
+  const [champions, setChampions] = useState(DEFAULT_CHAMPIONS);
+  const [tapeballStars, setTapeballStars] = useState(DEFAULT_TAPEBALL_STARS);
+
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [batTypeFilter, setBatTypeFilter] = useState('All');
@@ -203,102 +214,117 @@ export default function Home() {
   const [addedId, setAddedId] = useState(null);
   const { addToCart } = useCart();
 
+  const searchParams = useSearchParams();
   const heroRef = useRef(null);
-  const layerBackRef = useRef(null);
-  const layerMidRef = useRef(null);
-  const labelPanelRef = useRef(null);
-
-  const tilt = useTiltHandlers({ max: 9, scale: 1.03 });
-  const panelTilt = useTiltHandlers({ max: 6, scale: 1.0 });
-
-  useRevealObserver([loading, products.length, activeCategory, searchTerm, batTypeFilter, ballTypeFilter, gloveTypeFilter]);
-
-  const slides = [
-    {
-      badge: 'CRAFTED FOR CHAMPIONS',
-      title: 'TIMELESS POWER. MADE TO PERFORM.',
-      subtitle:
-        'Grade-1 English willow and premium tape-ball bats, hand-finished for power, precision, and perfect balance.',
-      tag: 'MASTER EDITION',
-      tagSub: 'Est. Karachi',
-    },
-    {
-      badge: 'PRO PROTECTION GEAR',
-      title: 'LIGHTWEIGHT & UNMATCHED COMFORT.',
-      subtitle:
-        'Full impact protection with ultra-light ergonomics, built for uninterrupted long innings.',
-      tag: 'PRO APPROVED',
-      tagSub: 'Match-ready',
-    },
-    {
-      badge: 'EXPERT CRAFTSMANSHIP',
-      title: 'MASTER BAT REPAIR & REGROOVING.',
-      subtitle:
-        'Give your favourite bat a second life — expert knocking, toe guarding, and thread binding.',
-      tag: 'HERITAGE CARE',
-      tagSub: 'Since day one',
-    },
-  ];
 
   useEffect(() => {
-    if (paused) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+    const urlCategory = searchParams.get('category') || searchParams.get('cat');
+    const urlSubCategory = searchParams.get('subcategory') || searchParams.get('sub');
+    const urlSearch = searchParams.get('search') || searchParams.get('q');
+
+    if (urlSubCategory) {
+      setActiveCategory(urlSubCategory);
+    } else if (urlCategory) {
+      setActiveCategory(urlCategory);
+    }
+
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
+    }
+  }, [searchParams]);
+
+  useRevealObserver([loading, products.length, activeCategory, searchTerm]);
+
+  const handleCategorySelect = (categoryName) => {
+    setActiveCategory(categoryName);
+    setTimeout(() => {
+      const collectionSection = document.getElementById('collection');
+      if (collectionSection) {
+        collectionSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  useEffect(() => {
+    if (paused || heroSlides.length === 0) return;
+    const timer = setInterval(() => setCurrentSlide((p) => (p + 1) % heroSlides.length), 6000);
     return () => clearInterval(timer);
-  }, [slides.length, paused]);
+  }, [paused, heroSlides.length]);
 
+  // Robust multi-endpoint & multi-key API fetcher
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchPageData() {
       try {
-        const res = await fetch('/api/products');
-        const data = await res.json();
+        setLoading(true);
 
-        if (Array.isArray(data)) {
-          setProducts(data);
-        } else if (data.success && Array.isArray(data.data)) {
-          setProducts(data.data);
-        } else if (Array.isArray(data.products)) {
-          setProducts(data.products);
-        } else if (Array.isArray(data.data)) {
-          setProducts(data.data);
+        // 1. Fetch products
+        try {
+          const resProd = await fetch('/api/products', { cache: 'no-store' });
+          if (resProd.ok) {
+            const data = await resProd.json();
+            const items = Array.isArray(data) ? data : (data.products || data.data || []);
+            setProducts(items);
+          }
+        } catch (e) {
+          console.error('Products fetch error:', e);
         }
+
+        // 2. Fetch hero slides
+        try {
+          const resHero = await fetch('/api/hero-slides', { cache: 'no-store' });
+          if (resHero.ok) {
+            const heroData = await resHero.json();
+            const slides = Array.isArray(heroData) ? heroData : (heroData.slides || heroData.data || []);
+            if (slides && slides.length > 0) setHeroSlides(slides);
+          }
+        } catch (e) {
+          console.error('Hero slides fetch error:', e);
+        }
+
+        // 3. Fetch brand ambassadors (champions)
+        try {
+          const resChamp = await fetch('/api/champions', { cache: 'no-store' });
+          if (resChamp.ok) {
+            const champData = await resChamp.json();
+            const champs = Array.isArray(champData) ? champData : (champData.champions || champData.data || []);
+            if (champs && champs.length > 0) setChampions(champs);
+          }
+        } catch (e) {
+          console.error('Champions fetch error:', e);
+        }
+
+        // 4. Fetch Tapeball Stars with Multi-Route & Multi-Key resolution
+        try {
+          let resTape = await fetch('/api/tapeball-stars', { cache: 'no-store' });
+          
+          // Route fallback check if primary endpoint fails
+          if (!resTape.ok) {
+            resTape = await fetch('/api/tapeball', { cache: 'no-store' });
+          }
+
+          if (resTape.ok) {
+            const tapeData = await resTape.json();
+            
+            // Checks all common response payload keys from admin panel API
+            const stars = Array.isArray(tapeData)
+              ? tapeData
+              : (tapeData.tapeballStars || tapeData.tapeBallStars || tapeData.tapeball_stars || tapeData.stars || tapeData.data || tapeData.tapeball || tapeData.players || tapeData.items || []);
+
+            if (Array.isArray(stars) && stars.length > 0) {
+              setTapeballStars(stars);
+            }
+          }
+        } catch (e) {
+          console.error('Tapeball stars fetch error:', e);
+        }
+
       } catch (err) {
-        console.error('Failed to fetch products', err);
+        console.error('Data loading error:', err);
       } finally {
         setLoading(false);
       }
     }
-    fetchProducts();
-  }, []);
-
-  // Ambient parallax for the hero art layers — imperative, rAF-throttled,
-  // and disabled for touch / reduced-motion users.
-  useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-    const coarse = window.matchMedia('(pointer: coarse)').matches;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (coarse || reduced) return;
-
-    let raf = null;
-    const handleMove = (e) => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        const rect = hero.getBoundingClientRect();
-        const px = (e.clientX - rect.left) / rect.width - 0.5;
-        const py = (e.clientY - rect.top) / rect.height - 0.5;
-        if (layerBackRef.current) {
-          layerBackRef.current.style.transform = `translate3d(${px * -26}px, ${py * -18}px, 0)`;
-        }
-        if (layerMidRef.current) {
-          layerMidRef.current.style.transform = `translate3d(${px * 18}px, ${py * 14}px, 0) rotate(${px * 6}deg)`;
-        }
-        raf = null;
-      });
-    };
-    hero.addEventListener('mousemove', handleMove);
-    return () => hero.removeEventListener('mousemove', handleMove);
+    fetchPageData();
   }, []);
 
   const handleAddToCart = (product) => {
@@ -309,321 +335,461 @@ export default function Home() {
     window.setTimeout(() => setAddedId(null), 1100);
   };
 
+  const isFiltered =
+    activeCategory !== 'All' ||
+    searchTerm.trim() !== '' ||
+    batTypeFilter !== 'All' ||
+    ballTypeFilter !== 'All' ||
+    gloveTypeFilter !== 'All';
+
   const filteredProducts = products.filter((p) => {
-    const pCategory = (p.category || '').toLowerCase();
-    const activeCat = activeCategory.toLowerCase();
+    const pCat = (p.category || '').toLowerCase().trim();
+    const pSub = (p.subCategory || p.type || '').toLowerCase().trim();
+    const pTitle = (p.name || p.title || '').toLowerCase().trim();
+    const fullText = `${pCat} ${pSub} ${pTitle}`;
+    const activeCat = activeCategory.toLowerCase().trim();
 
-    // Category Filter
-    let matchesCategory = activeCategory === 'All' || pCategory === activeCat;
-
-    // Sub-type Filters
-    if (activeCategory === 'Cricket Bats' && batTypeFilter !== 'All') {
-      const pType = (p.type || p.subCategory || '').toLowerCase();
-      matchesCategory = matchesCategory && pType.includes(batTypeFilter.toLowerCase());
-    }
-
-    if (activeCategory === 'Balls' && ballTypeFilter !== 'All') {
-      const pType = (p.type || p.subCategory || '').toLowerCase();
-      matchesCategory = matchesCategory && pType.includes(ballTypeFilter.toLowerCase());
-    }
-
-    if (activeCategory === 'Gloves' && gloveTypeFilter !== 'All') {
-      const pType = (p.type || p.subCategory || '').toLowerCase();
-      matchesCategory = matchesCategory && pType.includes(gloveTypeFilter.toLowerCase());
-    }
-
-    // Live Search Filter (Title / Name / Category)
     const query = searchTerm.trim().toLowerCase();
-    const matchesSearch =
-      !query ||
-      (p.name && p.name.toLowerCase().includes(query)) ||
-      (p.title && p.title.toLowerCase().includes(query)) ||
-      (p.category && p.category.toLowerCase().includes(query));
+    if (query && !fullText.includes(query)) return false;
 
-    return matchesCategory && matchesSearch;
+    if (activeCategory === 'All') return true;
+
+    if (activeCategory === 'Cricket Bats' && batTypeFilter !== 'All') {
+      if (!fullText.includes(batTypeFilter.toLowerCase())) return false;
+    }
+    if (activeCategory === 'Balls' && ballTypeFilter !== 'All') {
+      if (!fullText.includes(ballTypeFilter.toLowerCase())) return false;
+    }
+    if (activeCategory === 'Gloves' && gloveTypeFilter !== 'All') {
+      if (!fullText.includes(gloveTypeFilter.toLowerCase())) return false;
+    }
+
+    if (activeCat.includes('cap') || activeCat.includes('hat')) {
+      return fullText.includes('cap') || fullText.includes('hat');
+    }
+    if (activeCat.includes('shoe') || activeCat.includes('spike') || activeCat.includes('footwear')) {
+      return fullText.includes('shoe') || fullText.includes('spike') || fullText.includes('footwear');
+    }
+    if (activeCat.includes('glove')) {
+      return fullText.includes('glove');
+    }
+    if (activeCat.includes('bat')) {
+      return (fullText.includes('bat') || fullText.includes('willow')) &&
+             !fullText.includes('glove') && !fullText.includes('pad') &&
+             !fullText.includes('cap') && !fullText.includes('shoe') && !fullText.includes('spike');
+    }
+    if (activeCat.includes('protect') || activeCat.includes('pad') || activeCat.includes('helmet')) {
+      return (fullText.includes('protect') || fullText.includes('pad') || fullText.includes('helmet') || fullText.includes('guard')) &&
+             !fullText.includes('bat') && !fullText.includes('cap');
+    }
+    if (activeCat.includes('ball')) {
+      return fullText.includes('ball') && !fullText.includes('bat');
+    }
+
+    return pCat === activeCat || pSub === activeCat || pCat.includes(activeCat) || pSub.includes(activeCat);
   });
+
+  const getCategoryCount = (catKeyword) => {
+    const kw = catKeyword.toLowerCase();
+    const count = products.filter(p => {
+      const c = (p.category || '').toLowerCase();
+      const s = (p.subCategory || '').toLowerCase();
+      const t = (p.name || p.title || '').toLowerCase();
+      return c.includes(kw) || s.includes(kw) || t.includes(kw);
+    }).length;
+    return `${count} Products`;
+  };
+
+  const slide = heroSlides[currentSlide] || DEFAULT_HERO_SLIDES[0];
 
   return (
     <>
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
 
-      {/* Grain texture sits above everything for a tactile, leather-like finish */}
-      <svg className="grain-overlay" aria-hidden="true">
-        <filter id="grain">
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#grain)" />
-      </svg>
+      <div className="min-h-screen bg-white font-[family-name:var(--font-body)] text-[#0B120D] flex flex-col overflow-x-hidden">
+        <Navbar
+          activeCategory={activeCategory} 
+          setActiveCategory={handleCategorySelect}
+          setBatTypeFilter={setBatTypeFilter} 
+          setBallTypeFilter={setBallTypeFilter}
+          setGloveTypeFilter={setGloveTypeFilter}
+          searchTerm={searchTerm} 
+          setSearchTerm={(term) => {
+            setSearchTerm(term);
+            if (term) handleCategorySelect('All');
+          }}
+        />
 
-      <div className="min-h-screen bg-[#F1EFE6] font-[family-name:var(--font-body)] text-[#0B120D] flex flex-col justify-between overflow-x-hidden">
-        <div>
-          <Navbar
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
-            setBatTypeFilter={setBatTypeFilter}
-            setBallTypeFilter={setBallTypeFilter}
-            setGloveTypeFilter={setGloveTypeFilter}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />
+        {!isFiltered && (
+          <>
+            {/* HERO SECTION */}
+            <section ref={heroRef} className="relative overflow-hidden min-h-screen flex items-center">
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(102deg, #0B120D 0%, #1B120C 20%, #3B2416 38%, #6B4527 54%, #A9824F 70%, #D9C7A0 86%, #F4F1EA 100%)' }} />
+              <div className="absolute inset-0 opacity-[0.22] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("${GRAIN_TEXTURE}")`, backgroundSize: '320px 320px' }} />
+              <div className="absolute top-1/3 right-[10%] w-[380px] h-[380px] bg-[#A6362B]/[0.14] rounded-full blur-[150px] pointer-events-none" />
 
-          {/* HERO SECTION */}
-          <section
-            ref={heroRef}
-            className="relative bg-[#0B120D] text-white overflow-hidden py-16 sm:py-24 px-4 sm:px-8"
-            onMouseEnter={() => setPaused(true)}
-            onMouseLeave={() => setPaused(false)}
-          >
-            <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#C79A44_1px,transparent_1px)] [background-size:28px_28px]" />
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full py-24">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                  <div className="lg:col-span-7 space-y-8">
+                    <div className="overflow-hidden">
+                      <span key={`badge-${currentSlide}`} className="inline-flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.35em] text-[#C79A44] mb-2" style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                        <span className="w-6 h-[2px] bg-[#A6362B]" />
+                        {slide.badge || 'EXCLUSIVE COLLECTION'}
+                      </span>
+                    </div>
 
-            {/* Ambient parallax art: distant glow + floating ball */}
-            <div
-              ref={layerBackRef}
-              className="absolute -top-10 -right-10 sm:top-0 sm:right-0 pointer-events-none"
-              style={{ transition: 'transform 0.2s ease-out' }}
-              aria-hidden="true"
-            >
-              <div
-                className="w-[280px] h-[280px] sm:w-[420px] sm:h-[420px] rounded-full blur-3xl"
-                style={{ background: 'radial-gradient(circle, rgba(199,154,68,0.25), transparent 70%)', animation: 'pulseGlow 6s ease-in-out infinite' }}
-              />
-            </div>
-            <div
-              ref={layerMidRef}
-              className="hidden sm:block absolute top-10 right-10 lg:right-24 pointer-events-none"
-              style={{ transition: 'transform 0.2s ease-out', animation: 'floatY 7s ease-in-out infinite', '--float-rot': '-8deg' }}
-              aria-hidden="true"
-            >
-              <CricketBallOrb size={128} />
-            </div>
+                    <h1 key={`title-${currentSlide}`} className="font-[family-name:var(--font-display)] text-5xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.85] text-[#F4F1EA]" style={{ animation: 'fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                      {(slide.title || '').split('\n').map((line, i) => (
+                        <span key={i} className="block">{line}</span>
+                      ))}
+                    </h1>
 
-            <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-              <div className="space-y-5 max-w-2xl text-center md:text-left">
-                <span className="inline-block text-[#C79A44] text-[10px] sm:text-xs font-[family-name:var(--font-mono)] font-medium uppercase tracking-[0.3em]">
-                  {slides[currentSlide].badge}
-                </span>
-                <h1
-                  key={currentSlide}
-                  className="font-[family-name:var(--font-display)] text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-[0.95] text-white"
-                  style={{ animation: 'fadeUp 0.6s var(--ease-out-expo)' }}
-                >
-                  {slides[currentSlide].title}
-                </h1>
-                <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed max-w-lg mx-auto md:mx-0">
-                  {slides[currentSlide].subtitle}
-                </p>
+                    <p key={`sub-${currentSlide}`} className="text-[#F4F1EA]/70 text-sm sm:text-base leading-relaxed max-w-lg" style={{ animation: 'fadeUp 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
+                      {slide.subtitle || slide.description}
+                    </p>
 
-                <div className="pt-2 flex flex-wrap justify-center md:justify-start gap-4">
-                  <a
-                    href="#collection"
-                    className="magnetic-btn bg-[#A6362B] hover:bg-[#8C2C22] hover:shadow-[0_10px_28px_-8px_rgba(166,54,43,0.65)] text-white font-semibold text-xs uppercase tracking-widest px-7 py-3.5 transition-all shadow-lg active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C79A44]"
-                  >
-                    Shop collection
-                  </a>
-                  <a
-                    href="#heritage"
-                    className="magnetic-btn border border-neutral-700 hover:border-[#C79A44] hover:text-[#C79A44] text-white font-semibold text-xs uppercase tracking-widest px-7 py-3.5 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C79A44]"
-                  >
-                    Explore craft
-                  </a>
+                    <div className="flex flex-wrap gap-4 pt-4" style={{ animation: 'fadeUp 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
+                      <button onClick={() => handleCategorySelect('All')} className="group relative inline-flex items-center gap-3 bg-[#F4F1EA] hover:bg-[#A6362B] text-[#0B120D] hover:text-white font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300 hover:shadow-[0_20px_50px_-12px_rgba(166,54,43,0.35)] overflow-hidden">
+                        <span className="relative z-10">{slide.cta || 'Shop Now'}</span>
+                        <Icon path={ICONS.arrowRight} className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                      <button onClick={() => handleCategorySelect('All')} className="inline-flex items-center gap-2 border border-[#F4F1EA]/25 hover:border-[#C79A44] hover:text-[#C79A44] text-[#F4F1EA]/85 font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300">
+                        View Collection
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-8 pt-8" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+                      {heroSlides.map((s, idx) => (
+                        <button key={s._id || idx} onClick={() => setCurrentSlide(idx)} className="group flex items-center gap-3 cursor-pointer focus:outline-none">
+                          <span className={`text-[10px] font-mono font-bold transition-colors ${currentSlide === idx ? 'text-[#C79A44]' : 'text-[#F4F1EA]/30'}`}>
+                            0{idx + 1}
+                          </span>
+                          <div className={`h-[2px] transition-all duration-500 ${currentSlide === idx ? 'w-12 bg-[#C79A44]' : 'w-6 bg-[#F4F1EA]/15 group-hover:bg-[#F4F1EA]/35'}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="hidden lg:block lg:col-span-5">
+                    <div className="relative">
+                      <div className="absolute -inset-4 bg-gradient-to-br from-[#A6362B]/10 to-[#C79A44]/15 rounded-2xl blur-xl" />
+                      <div key={`card-${currentSlide}`} className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-[#F4F1EA]/30 shadow-2xl bg-[#F4F1EA]" style={{ animation: 'fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                        <img src={slide.image || slide.imageUrl} alt={slide.title || 'Hero Banner'} className="w-full h-full object-cover" onError={(e) => { e.target.src = `https://placehold.co/600x800/F4F1EA/0B120D?text=Kamran+Sports`; }} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/70 via-transparent to-transparent" />
+                        <div className="absolute bottom-6 left-6 right-6">
+                          <div className="text-[10px] font-mono text-[#C79A44] uppercase tracking-[0.3em] mb-2">Featured Drop</div>
+                          <div className="font-[family-name:var(--font-display)] text-2xl font-black uppercase tracking-tight text-white">
+                            {(slide.title || '').replace('\n', ' ')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <SeamStitch className="absolute bottom-0 left-0 w-full h-3" color="#C79A44" opacity={0.55} />
+            </section>
 
-              <div
-                ref={labelPanelRef}
-                onMouseMove={panelTilt.onMouseMove}
-                onMouseLeave={panelTilt.onMouseLeave}
-                className="tilt-card relative bg-[#141B15] border border-[#C79A44]/30 p-8 text-center min-w-[240px] hidden md:block"
-              >
-                <span className="absolute -top-2 left-6 bg-[#141B15] px-2 text-[9px] font-[family-name:var(--font-mono)] text-[#C79A44] uppercase tracking-[0.25em]">
-                  On the label
-                </span>
-                <div className="font-[family-name:var(--font-display)] text-2xl font-black text-[#C79A44] tracking-widest uppercase">
-                  {slides[currentSlide].tag}
+            {/* SCORECARD STRIP */}
+            <section className="relative bg-[#F4F1EA] border-b border-[#E8E4D9] py-10 px-4">
+              <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <StatCard index={0} value="1" suffix="" label="Grade-1 Willow" copy="Hand-selected English & Kashmir willow, pressed and shaped by master craftsmen." />
+                <StatCard index={1} value="24" suffix="H" label="Fast Dispatch" copy="Nationwide delivery with real-time tracking across Pakistan." />
+                <StatCard index={2} value="100" suffix="%" label="Satisfaction" copy="Premium quality guaranteed. Cash on delivery available." />
+              </div>
+            </section>
+
+            {/* FEATURED CATEGORIES */}
+            <section className="py-24 px-4 sm:px-8 bg-white">
+              <div className="max-w-7xl mx-auto">
+                <div className="reveal flex flex-col sm:flex-row justify-between items-end mb-14 gap-4">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#A6362B] block mb-2">Shop by Category</span>
+                    <h2 className="font-[family-name:var(--font-display)] text-4xl sm:text-5xl font-black uppercase tracking-tight text-[#0B120D]">Gear Up</h2>
+                  </div>
+                  <button onClick={() => handleCategorySelect('All')} className="group flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0B120D] hover:text-[#A6362B] transition-colors">
+                    View All <Icon path={ICONS.arrowRight} className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
-                <div className="text-[10px] font-[family-name:var(--font-mono)] uppercase tracking-[0.2em] text-neutral-400 mt-2">
-                  {slides[currentSlide].tagSub} · Kamran Sports
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    { name: 'Cricket Bats', key: 'bat', image: '/categories/bats.jpg', accent: '#A6362B' },
+                    { name: 'Protection', key: 'protect', image: '/categories/protection.jpg', accent: '#C79A44' },
+                    { name: 'Footwear', key: 'shoe', image: '/categories/shoes.jpg', accent: '#0B120D' },
+                  ].map((cat, idx) => (
+                    <div key={cat.name} className="reveal group relative h-96 sm:h-[28rem] overflow-hidden cursor-pointer rounded-2xl border border-[#E8E4D9] shadow-sm hover:shadow-xl transition-shadow duration-500" style={{ transitionDelay: `${idx * 100}ms` }} onClick={() => handleCategorySelect(cat.name)}>
+                      <img src={cat.image} alt={cat.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={(e) => { e.target.src = `https://placehold.co/600x800/F4F1EA/0B120D?text=${encodeURIComponent(cat.name)}`; }} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D] via-[#0B120D]/35 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                        <div className="w-12 h-1 mb-4 transition-all duration-300 group-hover:w-20" style={{ backgroundColor: cat.accent }} />
+                        <h3 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-1">{cat.name}</h3>
+                        <p className="text-xs font-mono uppercase tracking-wider text-white/70">{getCategoryCount(cat.key)}</p>
+                      </div>
+                      <div className="absolute top-6 right-6 w-12 h-12 rounded-full border border-white/40 flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 backdrop-blur-sm bg-white/10">
+                        <Icon path={ICONS.arrowRight} className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div
-              className="flex justify-center md:justify-start max-w-7xl mx-auto gap-2.5 mt-10 relative z-10"
-              role="tablist"
-              aria-label="Hero slides"
-            >
-              {slides.map((slide, idx) => (
-                <button
-                  key={slide.tag}
-                  role="tab"
-                  aria-selected={currentSlide === idx}
-                  aria-label={`Slide ${idx + 1}: ${slide.badge}`}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`h-1 transition-all duration-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C79A44] ${
-                    currentSlide === idx ? 'w-10 bg-[#C79A44]' : 'w-3 bg-neutral-800 hover:bg-neutral-600'
-                  }`}
-                />
-              ))}
-            </div>
+            {/* TRUSTED BY CHAMPIONS */}
+            <section className="relative bg-[#F4F1EA] py-24 sm:py-32 px-4 overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #A6362B 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+              <div className="relative z-10 max-w-7xl mx-auto">
+                <div className="reveal text-center mb-16 space-y-4">
+                  <div className="flex items-center justify-center gap-4 mb-2">
+                    <div className="h-px w-16 bg-[#A6362B]/40" />
+                    <span className="text-[10px] font-mono font-medium uppercase tracking-[0.4em] text-[#A6362B]">Our Brand Ambassadors</span>
+                    <div className="h-px w-16 bg-[#A6362B]/40" />
+                  </div>
+                  <h2 className="font-[family-name:var(--font-display)] text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight text-[#0B120D]">
+                    Trusted by Champions
+                  </h2>
+                </div>
 
-            <SeamStitch className="absolute bottom-0 left-0 w-full h-2.5" color="#A6362B" opacity={0.6} animated />
-          </section>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
+                  {champions.map((player, idx) => (
+                    <div key={player._id || player.id || idx} className="reveal group text-center" style={{ transitionDelay: `${idx * 100}ms` }}>
+                      <div className="relative mx-auto w-full max-w-[260px] aspect-[3/4] mb-6 overflow-hidden rounded-2xl bg-white border border-[#E8E4D9] shadow-sm group-hover:border-[#A6362B]/30 group-hover:shadow-lg transition-all duration-500">
+                        <img 
+                          src={player.image || player.imageUrl || player.photo || player.img} 
+                          alt={player.name} 
+                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-110" 
+                          onError={(e) => { e.target.src = `https://placehold.co/400x530/F4F1EA/A6362B?text=${encodeURIComponent(player.name || 'Champion')}`; }} 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/50 via-transparent to-transparent opacity-70" />
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#A6362B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      </div>
+                      <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-black uppercase tracking-wider text-[#0B120D] group-hover:text-[#A6362B] transition-colors duration-300">
+                        {player.name || player.title}
+                      </h3>
+                      <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 mt-2">{player.role || player.speciality}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <SeamStitch className="absolute bottom-0 left-0 w-full h-3" color="#A6362B" opacity={0.25} />
+            </section>
 
-          {/* SCORECARD STRIP */}
-          <section className="bg-white border-b border-[#D9D4C4] py-8 px-4">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <StatCard index={0} value="1" suffix="" label="Grade-1" copy="Handcrafted willow and refined specs." />
-              <StatCard index={1} value="COD" label="Cash on delivery" copy="Convenient doorstep ordering across Pakistan." />
-              <StatCard index={2} value="24" suffix="–48H" label="Fast dispatch" copy="Safe packaging with real-time tracking." />
-            </div>
-          </section>
+            {/* TAPEBALL STARS */}
+            <section className="relative bg-white py-24 sm:py-32 px-4 overflow-hidden">
+              <div className="max-w-7xl mx-auto">
+                <div className="reveal text-center mb-16 space-y-4">
+                  <div className="flex items-center justify-center gap-4 mb-2">
+                    <div className="h-px w-16 bg-[#C79A44]/50" />
+                    <span className="text-[10px] font-mono font-medium uppercase tracking-[0.4em] text-[#C79A44]">Street Legends</span>
+                    <div className="h-px w-16 bg-[#C79A44]/50" />
+                  </div>
+                  <h2 className="font-[family-name:var(--font-display)] text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight text-[#0B120D]">
+                    Tapeball Stars
+                  </h2>
+                </div>
 
-          {/* PRODUCT GRID */}
-          <main id="collection" className="max-w-7xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
-            <div className="reveal text-center mb-12 space-y-3">
-              <span className="text-[10px] font-[family-name:var(--font-mono)] font-medium uppercase tracking-[0.3em] text-[#A6362B]">
-                {searchTerm ? 'Search Results' : 'The collection'}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+                  {tapeballStars.map((star, idx) => {
+                    // Safe field normalization for database variations
+                    const starName = star.name || star.title || star.playerName || 'Tapeball Star';
+                    const starRole = star.role || star.designation || star.speciality || 'Street Legend';
+                    const starLocation = star.city || star.location || star.address || star.town || 'Pakistan';
+                    const starImage = star.image || star.imageUrl || star.img || star.photo || star.avatar;
+
+                    return (
+                      <div key={star._id || star.id || idx} className="reveal group" style={{ transitionDelay: `${idx * 100}ms` }}>
+                        <div className="relative mb-5 overflow-hidden rounded-2xl bg-[#F4F1EA] border border-[#E8E4D9] shadow-sm group-hover:shadow-xl group-hover:border-[#A6362B]/20 transition-all duration-500">
+                          <div className="aspect-[3/4] relative overflow-hidden">
+                            <img 
+                              src={starImage} 
+                              alt={starName} 
+                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" 
+                              onError={(e) => { e.target.src = `https://placehold.co/400x530/F4F1EA/A6362B?text=${encodeURIComponent(starName)}`; }} 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/80 via-[#0B120D]/15 to-transparent" />
+                            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#E8E4D9] shadow-sm">
+                              <Icon path={ICONS.location} className="w-3 h-3 text-[#A6362B]" />
+                              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#0B120D]">
+                                {starLocation}
+                              </span>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 p-5">
+                              <h3 className="font-[family-name:var(--font-display)] text-lg font-black uppercase tracking-wider text-white group-hover:text-[#C79A44] transition-colors">
+                                {starName}
+                              </h3>
+                              <p className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/80 mt-1">{starRole}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════
+            DYNAMIC PRODUCT GRID SECTION
+        ═══════════════════════════════════════════ */}
+        <main id="collection" className={`bg-[#F4F1EA] px-4 sm:px-8 ${isFiltered ? 'pt-28 sm:pt-36 pb-24 min-h-[70vh]' : 'py-24'}`}>
+          <div className="max-w-7xl mx-auto">
+            <div className="reveal text-center mb-14 space-y-3">
+              <span className="text-[10px] font-mono font-medium uppercase tracking-[0.3em] text-[#A6362B]">
+                {searchTerm ? 'Search Results' : isFiltered ? 'Category View' : 'The Collection'}
               </span>
-              <h2 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl font-black uppercase tracking-tight text-[#0B120D]">
-                {searchTerm
-                  ? `Showing results for "${searchTerm}"`
-                  : activeCategory === 'All'
-                  ? 'Designed for every match'
-                  : activeCategory}
+              <h2 className="font-[family-name:var(--font-display)] text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-[#0B120D]">
+                {searchTerm ? `"${searchTerm}"` : activeCategory === 'All' ? 'Latest Arrivals' : activeCategory}
               </h2>
-              <SeamStitch className="w-16 h-2.5 mx-auto" color="#A6362B" />
+              {isFiltered && (
+                <button 
+                  onClick={() => {
+                    setActiveCategory('All');
+                    setSearchTerm('');
+                    setBatTypeFilter('All');
+                    setBallTypeFilter('All');
+                    setGloveTypeFilter('All');
+                  }} 
+                  className="inline-block text-xs font-mono font-bold text-[#A6362B] uppercase tracking-widest mt-2 underline cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  ← Back to Home Page
+                </button>
+              )}
+              <SeamStitch className="w-20 h-3 mx-auto mt-4" color="#A6362B" opacity={0.6} />
             </div>
 
             {loading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                  <div key={i} className="relative bg-[#E4E1D5] h-80 rounded-lg overflow-hidden">
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: 'linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%)',
-                        animation: 'shimmerSweep 1.6s ease-in-out infinite',
-                      }}
-                    />
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="relative bg-white h-96 rounded-xl overflow-hidden border border-[#E8E4D9]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/[0.03] to-transparent animate-shimmer" />
                   </div>
                 ))}
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="reveal text-center py-20 bg-white rounded-lg border border-[#D9D4C4] p-8 space-y-3">
-                <p className="text-neutral-600 font-semibold text-xs uppercase tracking-wider">
-                  {searchTerm
-                    ? `No gear found matching "${searchTerm}"`
-                    : `No gear currently available in "${activeCategory}"`}
+              <div className="reveal text-center py-24 bg-white rounded-2xl border border-[#E8E4D9]">
+                <p className="text-neutral-500 font-bold text-sm uppercase tracking-wider mb-2">
+                  {searchTerm ? `No gear found for "${searchTerm}"` : `No products found in "${activeCategory}"`}
                 </p>
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="text-xs text-[#A6362B] underline font-medium hover:text-[#0B120D] transition"
-                  >
-                    Clear search term
-                  </button>
-                )}
+                <button 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setActiveCategory('All');
+                    setBatTypeFilter('All');
+                    setBallTypeFilter('All');
+                    setGloveTypeFilter('All');
+                  }} 
+                  className="text-xs text-[#A6362B] underline font-bold uppercase tracking-wider mt-2"
+                >
+                  View All Products
+                </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-7" style={{ perspective: '1400px' }}>
-                {filteredProducts.map((product, i) => (
-                  <div
-                    key={product._id}
-                    onMouseMove={tilt.onMouseMove}
-                    onMouseLeave={tilt.onMouseLeave}
-                    className="tilt-card reveal group relative bg-white border border-[#D9D4C4] rounded-lg overflow-hidden flex flex-col justify-between hover:border-[#0B120D]"
-                    style={{ transitionDelay: `${(i % 8) * 60}ms` }}
-                  >
-                    <div className="sheen" aria-hidden="true" />
-                    <div>
-                      <Link
-                        href={`/products/${product._id}`}
-                        className="block relative bg-[#F1EFE6] aspect-square overflow-hidden border-b border-[#D9D4C4]"
-                        style={{ transform: 'translateZ(20px)' }}
-                      >
-                        <span className="absolute top-3 left-3 z-10 bg-[#A6362B] text-white text-[8px] sm:text-[9px] font-[family-name:var(--font-mono)] font-semibold uppercase px-2.5 py-1 tracking-widest rounded-sm shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-7">
+                {filteredProducts.map((product, i) => {
+                  const title = product.name || product.title || 'Product';
+                  const imgUrl = product.image || product.images?.[0] || 'https://placehold.co/400x500/F4F1EA/0B120D?text=No+Image';
+                  const price = Number(product.price || 0).toLocaleString();
+
+                  return (
+                    <div key={product._id || product.id || i} className="reveal group relative bg-white border border-[#E8E4D9] rounded-xl overflow-hidden flex flex-col hover:border-[#A6362B]/30 hover:shadow-xl transition-all duration-500" style={{ transitionDelay: `${(i % 8) * 60}ms` }}>
+                      <Link href={`/products/${product._id}`} className="block relative bg-[#F4F1EA] aspect-[4/5] overflow-hidden">
+                        <span className="absolute top-4 left-4 z-10 bg-[#0B120D] text-white text-[9px] font-mono font-bold uppercase px-3 py-1.5 tracking-widest">
                           {product.category || 'Gear'}
                         </span>
-
-                        <img
-                          src={product.image || 'https://via.placeholder.com/400'}
-                          alt={product.name || product.title || 'Product image'}
-                          className="w-full h-full object-cover group-hover:scale-105 motion-reduce:transform-none transition-transform duration-700 ease-out"
-                        />
+                        {product.inStock === false && (
+                          <span className="absolute top-4 right-4 z-10 bg-[#A6362B] text-white text-[9px] font-mono font-bold uppercase px-3 py-1.5 tracking-widest">Sold Out</span>
+                        )}
+                        <img src={imgUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                       </Link>
 
-                      <div className="p-4 text-center flex flex-col justify-between" style={{ transform: 'translateZ(12px)' }}>
+                      <div className="p-5 flex flex-col flex-1">
                         <Link href={`/products/${product._id}`}>
-                          <h3 className="font-semibold text-xs sm:text-sm text-[#0B120D] line-clamp-1 group-hover:text-[#A6362B] transition-colors">
-                            {product.name || product.title}
-                          </h3>
+                          <h3 className="font-bold text-xs sm:text-sm text-[#0B120D] uppercase tracking-wide line-clamp-1 group-hover:text-[#A6362B] transition-colors">{title}</h3>
                         </Link>
-                        <div className="mt-2 font-[family-name:var(--font-mono)] text-sm sm:text-base font-bold text-[#0B120D]">
-                          Rs. {product.price ? product.price.toLocaleString() : 'N/A'}
+                        <p className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">{product.subCategory || product.category || 'Cricket'}</p>
+                        <div className="mt-auto pt-4 flex items-center justify-between">
+                          <span className="font-mono text-sm sm:text-base font-bold text-[#0B120D]">Rs. {price}</span>
+                          <button onClick={() => handleAddToCart(product)} disabled={addedId === product._id || product.inStock === false}
+                            className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${addedId === product._id ? 'bg-emerald-600 text-white' : 'bg-[#0B120D] text-white hover:bg-[#A6362B] hover:scale-110'} ${bouncingId === product._id ? 'animate-bounce' : ''}`}>
+                            {addedId === product._id ? (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </main>
 
-                    <div className="p-4 pt-0" style={{ transform: 'translateZ(12px)' }}>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        disabled={addedId === product._id}
-                        className={`magnetic-btn w-full text-white text-[11px] sm:text-xs font-semibold uppercase tracking-wider py-2.5 rounded-sm transition-colors duration-200 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C79A44] ${
-                          addedId === product._id ? 'bg-[#3F6B3F]' : 'bg-[#0B120D] hover:bg-[#A6362B]'
-                        } ${bouncingId === product._id ? 'cart-bounce' : ''}`}
-                      >
-                        {addedId === product._id ? 'Added ✓' : 'Add to Cart'}
-                      </button>
-                    </div>
+        {/* BRAND HERITAGE */}
+        {!isFiltered && (
+          <section className="relative bg-[#0B120D] py-28 sm:py-36 px-4 overflow-hidden">
+            <div className="absolute inset-0 opacity-[0.16] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("${GRAIN_TEXTURE}")`, backgroundSize: '320px 320px' }} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[640px] h-[280px] bg-[#A6362B]/[0.12] rounded-full blur-[160px] pointer-events-none" />
+
+            <div className="relative z-10 max-w-4xl mx-auto text-center">
+              <div className="reveal flex flex-col items-center gap-4 mb-10">
+                <div className="relative w-16 h-16">
+                  <SeamCircle className="w-full h-full" color="#C79A44" opacity={0.8} />
+                </div>
+                <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-[#C79A44]">Est. 2005 — Karachi, Pakistan</span>
+              </div>
+
+              <h2 className="reveal font-[family-name:var(--font-display)] uppercase tracking-tighter leading-[0.92] text-4xl sm:text-6xl lg:text-7xl">
+                <span className="block font-light text-[#F4F1EA]/45">We don't just make</span>
+                <span className="block font-black text-[#F4F1EA]">Bats.</span>
+                <span className="block font-light text-[#F4F1EA]/45 mt-3">We make</span>
+                <span className="block font-black text-[#C79A44]">Winners.</span>
+              </h2>
+
+              <div className="reveal flex items-center justify-center gap-4 mt-12">
+                <div className="h-px w-14 bg-[#A6362B]/40" />
+                <SeamStitch className="w-20 h-3" color="#A6362B" opacity={0.55} />
+                <div className="h-px w-14 bg-[#A6362B]/40" />
+              </div>
+
+              <p className="reveal text-[#F4F1EA]/55 text-xs sm:text-sm font-medium tracking-wide mt-8 max-w-md mx-auto leading-relaxed">
+                Two decades of pressing willow and stitching leather for players who play to win, not just to play.
+              </p>
+
+              <div className="reveal flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-14">
+                {HERITAGE_BADGES.map((label) => (
+                  <div key={label} className="flex items-center gap-2 border border-[#F4F1EA]/15 rounded-full px-5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-[#F4F1EA]/75 hover:border-[#C79A44]/50 hover:text-[#C79A44] transition-colors duration-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#A6362B]" />
+                    {label}
                   </div>
                 ))}
               </div>
-            )}
-          </main>
 
-          {/* HERITAGE & CRAFT SECTION */}
-          <section id="heritage" className="bg-[#0B120D] text-white py-16 px-4 sm:px-8 border-t border-[#D9D4C4]/20 relative overflow-hidden">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-              <div className="reveal space-y-4">
-                <span className="text-[10px] font-[family-name:var(--font-mono)] text-[#C79A44] uppercase tracking-[0.3em]">
-                  Heritage & Craftsmanship
-                </span>
-                <h2 className="font-[family-name:var(--font-display)] text-3xl sm:text-5xl font-black uppercase tracking-tight">
-                  Hand-Pressed Willow. Built for Match Winners.
-                </h2>
-                <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed">
-                  Based in Karachi, Kamran Sports brings decades of specialized bat pressing, grain selection, and weight distribution mastery directly to your game. From hardball matches to intense tapeball tournaments, every piece is tuned for durability and maximal sweet-spot response.
-                </p>
-              </div>
-              <div
-                onMouseMove={panelTilt.onMouseMove}
-                onMouseLeave={panelTilt.onMouseLeave}
-                className="tilt-card reveal bg-[#141B15] border border-[#C79A44]/30 p-6 sm:p-8 rounded-lg space-y-4"
-                style={{ transitionDelay: '120ms' }}
-              >
-                <div className="font-[family-name:var(--font-display)] text-2xl text-[#C79A44] font-black uppercase tracking-wide">
-                  Bat Repair & Custom Services
-                </div>
-                <p className="text-neutral-300 text-xs sm:text-sm leading-relaxed">
-                  Extend the life of your prized willow with our custom repair services: toe guarding, thread binding, custom grip application, and professional knocking.
-                </p>
-                <a
-                  href={`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent('Hi Kamran Sports, I am interested in bat repair and custom services.')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="magnetic-btn inline-block bg-[#A6362B] hover:bg-[#8C2C22] text-white text-xs font-semibold uppercase tracking-widest px-6 py-3 rounded-sm transition-colors"
-                >
-                  Inquire via WhatsApp
+              <div className="reveal mt-10">
+                <a href={`https://wa.me/${PHONE_NUMBER}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 bg-[#A6362B] hover:bg-[#C79A44] text-white font-bold text-xs uppercase tracking-[0.2em] px-8 py-4 transition-all duration-300 hover:shadow-[0_20px_50px_-12px_rgba(166,54,43,0.35)]">
+                  Talk to Our Gear Experts
+                  <Icon path={ICONS.arrowRight} className="w-4 h-4" />
                 </a>
               </div>
             </div>
           </section>
-        </div>
+        )}
 
         <Footer />
         <WhatsAppButton phoneNumber={PHONE_NUMBER} />
       </div>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <HomeContent />
+    </Suspense>
   );
 }
