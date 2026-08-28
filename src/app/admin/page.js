@@ -50,6 +50,15 @@ const EMPTY_STAR_FORM = {
   image: '',
 };
 
+const EMPTY_HERO_FORM = {
+  badge: '',
+  title: '',
+  subtitle: '',
+  cta: 'SHOP FOOTWEAR',
+  link: '#collection',
+  image: '',
+};
+
 async function safeFetch(url, options = {}) {
   const res = await fetch(url, options);
   const text = await res.text();
@@ -96,12 +105,14 @@ const ICONS = {
   close: "M6 18L18 6M6 6l12 12",
   package: "M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z",
   star: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385c.116.488-.41.868-.834.613l-4.71-2.834a.563.563 0 00-.582 0l-4.71 2.834c-.423.255-.95-.125-.834-.613l1.285-5.385a.563.563 0 00-.182-.557l-4.204-3.602c-.38-.325-.178-.948.32-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z",
+  image: "M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
 };
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('manage');
   const [products, setProducts] = useState([]);
   const [stars, setStars] = useState([]);
+  const [heroSlides, setHeroSlides] = useState([]);
   
   // Product Form State
   const [formData, setFormData] = useState(EMPTY_PRODUCT_FORM);
@@ -111,6 +122,10 @@ export default function AdminPage() {
   const [starFormData, setStarFormData] = useState(EMPTY_STAR_FORM);
   const [editingStarId, setEditingStarId] = useState(null);
   const [editingStarSource, setEditingStarSource] = useState(null);
+
+  // Hero Form State
+  const [heroFormData, setHeroFormData] = useState(EMPTY_HERO_FORM);
+  const [editingHeroId, setEditingHeroId] = useState(null);
 
   // Upload & UI States
   const [selectedFile, setSelectedFile] = useState(null);
@@ -178,9 +193,20 @@ export default function AdminPage() {
     }
   };
 
+  const fetchHeroSlides = async () => {
+    try {
+      const data = await safeFetch('/api/hero-slides');
+      const list = Array.isArray(data) ? data : (data.data || data.slides || []);
+      setHeroSlides(list);
+    } catch (err) {
+      console.error('Fetch hero slides error:', err.message);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchStars();
+    fetchHeroSlides();
     return () => dismissTimer.current && clearTimeout(dismissTimer.current);
   }, []);
 
@@ -205,6 +231,11 @@ export default function AdminPage() {
     setStarFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleHeroChange = (e) => {
+    const { name, value } = e.target;
+    setHeroFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const processFile = (file) => {
     if (file.size > 5 * 1024 * 1024) {
       showMessage('error', 'Image size must be under 5MB.');
@@ -226,9 +257,11 @@ export default function AdminPage() {
     setImagePreview('');
     setFormData((prev) => ({ ...prev, image: '' }));
     setStarFormData((prev) => ({ ...prev, image: '' }));
+    setHeroFormData((prev) => ({ ...prev, image: '' }));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // --- PRODUCT HANDLERS ---
   const handleEditClick = (product) => {
     setEditingId(product._id);
     setFormData({
@@ -318,6 +351,7 @@ export default function AdminPage() {
     }
   };
 
+  // --- STAR HANDLERS ---
   const handleEditStarClick = (star) => {
     setEditingStarId(star._id);
     setEditingStarSource(star._source || (star.category?.toLowerCase().includes('hardball') ? 'champions' : 'tapeball'));
@@ -375,7 +409,6 @@ export default function AdminPage() {
       const isHardball = starFormData.category.toLowerCase().includes('hardball');
       const targetEndpoint = isHardball ? '/api/champions' : '/api/tapeball-stars';
 
-      // Switch target database if editing category changed
       if (isUpdating && editingStarSource && ((isHardball && editingStarSource === 'tapeball') || (!isHardball && editingStarSource === 'champions'))) {
         const oldEndpoint = editingStarSource === 'champions' ? `/api/champions?id=${editingStarId}` : `/api/tapeball-stars?id=${editingStarId}`;
         try {
@@ -418,6 +451,86 @@ export default function AdminPage() {
     }
   };
 
+  // --- HERO SLIDES HANDLERS ---
+  const handleEditHeroClick = (slide) => {
+    setEditingHeroId(slide._id);
+    setHeroFormData({
+      badge: slide.badge || '',
+      title: slide.title || '',
+      subtitle: slide.subtitle || '',
+      cta: slide.cta || 'SHOP FOOTWEAR',
+      link: slide.link || '#collection',
+      image: slide.image || '',
+    });
+    setImagePreview(slide.image || '');
+    setSelectedFile(null);
+    setActiveTab('add-hero');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelHeroEdit = () => {
+    setEditingHeroId(null);
+    setHeroFormData(EMPTY_HERO_FORM);
+    handleClearImage();
+  };
+
+  const handleDeleteHeroClick = async (id) => {
+    if (!confirm('Are you sure you want to delete this Hero Slide?')) return;
+    try {
+      const data = await safeFetch(`/api/hero-slides?id=${id}`, { method: 'DELETE' });
+      if (data.success || data.message || data.ok) {
+        showMessage('success', 'Hero slide deleted successfully.');
+        fetchHeroSlides();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    }
+  };
+
+  const handleHeroSubmit = async (e) => {
+    e.preventDefault();
+    if (!heroFormData.image && !selectedFile) {
+      showMessage('error', 'Please upload or provide an image for the hero slide.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let finalImageUrl = heroFormData.image;
+      if (selectedFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', selectedFile);
+        const uploadData = await safeFetch('/api/upload', { method: 'POST', body: uploadFormData });
+        if (!uploadData.success && !uploadData.url) throw new Error(uploadData.error || 'Image upload failed.');
+        finalImageUrl = uploadData.url;
+      }
+
+      const isUpdating = !!editingHeroId;
+      const payload = {
+        ...heroFormData,
+        image: finalImageUrl,
+        ...(isUpdating && { _id: editingHeroId }),
+      };
+
+      const data = await safeFetch('/api/hero-slides', {
+        method: isUpdating ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (data.success || data.message || data._id) {
+        showMessage('success', isUpdating ? 'Hero Slide updated successfully!' : 'Hero Slide added successfully!');
+        handleCancelHeroEdit();
+        fetchHeroSlides();
+        setActiveTab('manage-hero');
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredProducts = products.filter((p) => {
     const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
     const query = searchQuery.toLowerCase();
@@ -447,7 +560,7 @@ export default function AdminPage() {
                 Kamran Sports
               </h1>
               <p className="text-[11px] font-medium text-[#A6362B] tracking-[0.2em] uppercase">
-                Inventory & Stars Admin
+                Inventory, Stars & Hero Admin
               </p>
             </div>
           </div>
@@ -465,7 +578,8 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-5 mb-8">
+        {/* STATS CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
             <div className="flex items-start justify-between">
               <div>
@@ -513,6 +627,18 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase text-blue-600 mb-1">Hero Slides</p>
+                <p className="text-3xl font-bold text-[#0B120D] font-mono">{heroSlides.length}</p>
+              </div>
+              <div className="p-3 bg-blue-600 rounded-xl">
+                <Icon path={ICONS.image} className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {message.text && (
@@ -528,14 +654,39 @@ export default function AdminPage() {
 
         {/* Tab Switcher */}
         <div className="bg-[#F4F1EA] border border-[#E8E4D9] p-1.5 rounded-xl mb-8 flex flex-wrap gap-2">
+          {/* Hero Section Tabs */}
+          <button
+            onClick={() => setActiveTab('manage-hero')}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'manage-hero' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={ICONS.image} className="w-4 h-4" />
+            <span>Hero Slides ({heroSlides.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              handleCancelHeroEdit();
+              setActiveTab('add-hero');
+            }}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'add-hero' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={editingHeroId ? ICONS.edit : ICONS.plus} className="w-4 h-4" />
+            <span>{editingHeroId ? 'Edit Hero Slide' : 'Add Hero Slide'}</span>
+          </button>
+
+          {/* Catalog Tabs */}
           <button
             onClick={() => setActiveTab('manage')}
-            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'manage' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
           >
             <Icon path={ICONS.package} className="w-4 h-4" />
-            <span>Manage Catalog ({filteredProducts.length})</span>
+            <span>Products ({filteredProducts.length})</span>
           </button>
 
           <button
@@ -543,7 +694,7 @@ export default function AdminPage() {
               handleCancelEdit();
               setActiveTab('add');
             }}
-            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'add' ? 'bg-[#A6362B] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
           >
@@ -551,14 +702,15 @@ export default function AdminPage() {
             <span>{editingId ? 'Edit Product' : 'Add Product'}</span>
           </button>
 
+          {/* Stars Tabs */}
           <button
             onClick={() => setActiveTab('manage-stars')}
-            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'manage-stars' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
           >
             <Icon path={ICONS.star} className="w-4 h-4" />
-            <span>Manage Stars ({stars.length})</span>
+            <span>Stars ({stars.length})</span>
           </button>
 
           <button
@@ -566,7 +718,7 @@ export default function AdminPage() {
               handleCancelStarEdit();
               setActiveTab('add-star');
             }}
-            className={`px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
               activeTab === 'add-star' ? 'bg-[#C79A44] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
             }`}
           >
@@ -575,7 +727,182 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* TAB 1: ADD PRODUCT */}
+        {/* TAB 1: ADD / EDIT HERO SLIDE */}
+        {activeTab === 'add-hero' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">
+                {editingHeroId ? 'Edit Hero Slide Details' : 'Add New Hero Slide Image'}
+              </h2>
+              {editingHeroId && (
+                <button onClick={handleCancelHeroEdit} className="text-xs text-[#A6362B] font-bold uppercase">
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleHeroSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 space-y-5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Badge Text (Tagline) *</label>
+                    <input
+                      type="text"
+                      name="badge"
+                      value={heroFormData.badge}
+                      onChange={handleHeroChange}
+                      required
+                      placeholder="STEP UP YOUR GAME"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Main Title *</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={heroFormData.title}
+                      onChange={handleHeroChange}
+                      required
+                      placeholder="SPIKE INTO ACTION"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Subtitle / Description *</label>
+                    <textarea
+                      name="subtitle"
+                      value={heroFormData.subtitle}
+                      onChange={handleHeroChange}
+                      required
+                      rows="3"
+                      placeholder="Cricket & football footwear engineered for grip, speed and support on any pitch."
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Button CTA Text</label>
+                      <input
+                        type="text"
+                        name="cta"
+                        value={heroFormData.cta}
+                        onChange={handleHeroChange}
+                        placeholder="SHOP FOOTWEAR"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Button Link URL</label>
+                      <input
+                        type="text"
+                        name="link"
+                        value={heroFormData.link}
+                        onChange={handleHeroChange}
+                        placeholder="#collection"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-4 space-y-6">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Hero Image *</label>
+                    <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                      {imagePreview ? (
+                        <div className="relative group">
+                          <img src={imagePreview} alt="Hero Preview" className="w-full h-48 object-cover rounded-lg" />
+                          <button
+                            type="button"
+                            onClick={handleClearImage}
+                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition"
+                          >
+                            ✕ Clear Image
+                          </button>
+                        </div>
+                      ) : (
+                        <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
+                          <p className="text-xs text-neutral-400 font-semibold">Upload Hero Section Banner Image (Max 5MB)</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase py-4 rounded-xl transition shadow-sm"
+                  >
+                    {loading ? 'Processing...' : editingHeroId ? 'Update Hero Slide' : 'Save Hero Slide'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 2: MANAGE HERO SLIDES */}
+        {activeTab === 'manage-hero' && (
+          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Active Hero Slides Banner List</h2>
+              <button
+                onClick={() => {
+                  handleCancelHeroEdit();
+                  setActiveTab('add-hero');
+                }}
+                className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition"
+              >
+                + Add New Slide
+              </button>
+            </div>
+
+            <div className="divide-y divide-[#F0EDE4]">
+              {heroSlides.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">
+                  No hero slides found in database. Add one to display on home page!
+                </div>
+              ) : (
+                heroSlides.map((slide) => (
+                  <div key={slide._id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <SafeImage src={slide.image} alt={slide.title} className="w-24 h-16 object-cover rounded-lg border border-[#E8E4D9]" />
+                      <div>
+                        <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded">
+                          {slide.badge || 'TAGLINE'}
+                        </span>
+                        <h3 className="font-bold text-sm text-[#0B120D] mt-1">{slide.title}</h3>
+                        <p className="text-xs text-neutral-500 line-clamp-1">{slide.subtitle}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <button
+                        onClick={() => handleEditHeroClick(slide)}
+                        className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteHeroClick(slide._id)}
+                        className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: ADD PRODUCT */}
         {activeTab === 'add' && (
           <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
@@ -733,7 +1060,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 2: MANAGE PRODUCTS */}
+        {/* TAB 4: MANAGE PRODUCTS */}
         {activeTab === 'manage' && (
           <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
             <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex flex-col sm:flex-row gap-4">
@@ -792,7 +1119,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 3: ADD / EDIT STAR */}
+        {/* TAB 5: ADD / EDIT STAR */}
         {activeTab === 'add-star' && (
           <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
@@ -901,7 +1228,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 4: MANAGE STARS */}
+        {/* TAB 6: MANAGE STARS */}
         {activeTab === 'manage-stars' && (
           <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
             <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">

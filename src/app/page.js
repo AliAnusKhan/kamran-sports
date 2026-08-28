@@ -32,7 +32,7 @@ const DEFAULT_HERO_SLIDES = [
     subtitle: 'Professional pads, gloves & helmets. Lightweight protection trusted by international players.',
     cta: 'Shop Protection',
     link: '#collection',
-    image: '/hero/slide-[#A6362B]ection.jpg',
+    image: '/hero/slide-protection.jpg',
   },
   {
     _id: 'hero-3',
@@ -75,6 +75,16 @@ const DEFAULT_TAPEBALL_STARS = [
   { _id: 't2', name: 'Nadeem Khan', role: 'Hard Hitter', location: 'Lahore', image: '/tapeball-stars/nadeem.jpg' },
   { _id: 't3', name: 'Faisal Sixer', role: 'Six Hitter', location: 'Rawalpindi', image: '/tapeball-stars/faisal.jpg' },
   { _id: 't4', name: 'Bilal Yorker', role: 'Yorker Specialist', location: 'Faisalabad', image: '/tapeball-stars/bilal.jpg' },
+];
+
+const FEATURED_CATEGORIES_LIST = [
+  { name: 'Cricket Bats', key: 'bat', accent: '#A6362B' },
+  { name: 'Protection', key: 'protect', accent: '#C79A44' },
+  { name: 'Footwear', key: 'shoe', accent: '#0B120D' },
+  { name: 'Caps & Hats', key: 'cap', accent: '#A6362B' },
+  { name: 'T-Shirts', key: 'shirt', accent: '#C79A44' },
+  { name: 'Trousers', key: 'trouser', accent: '#0B120D' },
+  { name: 'Indoor Games', key: 'indoor', accent: '#A6362B' },
 ];
 
 const HERITAGE_BADGES = [
@@ -193,6 +203,108 @@ function StatCard({ index, value, suffix, label, copy }) {
 }
 
 /* ═══════════════════════════════════════════
+   DYNAMIC CATEGORY SLIDER CARD COMPONENT
+═══════════════════════════════════════════ */
+function DynamicCategoryCard({ cat, products, onSelect, index }) {
+  const [currentImgIdx, setCurrentImgIdx] = useState(0);
+
+  // Filter products matching this category key
+  const matchingProducts = products.filter((p) => {
+    const pCat = (p.category || '').toLowerCase();
+    const pSub = (p.subCategory || p.type || '').toLowerCase();
+    const pTitle = (p.name || p.title || '').toLowerCase();
+    const fullText = `${pCat} ${pSub} ${pTitle}`;
+    const kw = cat.key.toLowerCase();
+
+    if (kw === 'cap') return fullText.includes('cap') || fullText.includes('hat');
+    if (kw === 'shirt') return fullText.includes('shirt') || fullText.includes('t-shirt') || fullText.includes('jersey') || fullText.includes('apparel');
+    if (kw === 'trouser') return fullText.includes('trouser') || fullText.includes('pant') || fullText.includes('tracksuit') || fullText.includes('lower');
+    if (kw === 'indoor') return fullText.includes('indoor') || fullText.includes('board') || fullText.includes('ludo') || fullText.includes('carrom') || fullText.includes('chess') || fullText.includes('table tennis');
+    if (kw === 'shoe') return fullText.includes('shoe') || fullText.includes('spike') || fullText.includes('footwear');
+    if (kw === 'protect') return fullText.includes('protect') || fullText.includes('pad') || fullText.includes('helmet') || fullText.includes('glove') || fullText.includes('guard');
+    if (kw === 'bat') return (fullText.includes('bat') || fullText.includes('willow')) && !fullText.includes('glove') && !fullText.includes('pad');
+
+    return fullText.includes(kw);
+  });
+
+  // Extract all available image URLs for slideshow
+  const categoryImages = matchingProducts
+    .flatMap((p) => [p.image, ...(Array.isArray(p.images) ? p.images : [])])
+    .filter(Boolean);
+
+  const fallbackImg = `https://placehold.co/600x800/F4F1EA/0B120D?text=${encodeURIComponent(cat.name)}`;
+  const displayImages = categoryImages.length > 0 ? categoryImages : [fallbackImg];
+
+  // Rotate images every 10-12 seconds
+  useEffect(() => {
+    if (displayImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentImgIdx((prev) => (prev + 1) % displayImages.length);
+    }, 10000 + (index % 3) * 1000); // slight offset for visual effect
+
+    return () => clearInterval(interval);
+  }, [displayImages.length, index]);
+
+  return (
+    <div
+      onClick={() => onSelect(cat.name)}
+      className="reveal group relative h-80 sm:h-[26rem] overflow-hidden cursor-pointer rounded-2xl border border-[#E8E4D9] shadow-sm hover:shadow-2xl transition-all duration-500"
+      style={{ transitionDelay: `${index * 80}ms` }}
+    >
+      {/* Background Images Crossfade */}
+      {displayImages.map((imgUrl, imgI) => (
+        <img
+          key={imgI}
+          src={imgUrl}
+          alt={cat.name}
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 ease-out ${
+            imgI === currentImgIdx ? 'opacity-100 z-0' : 'opacity-0 z-0'
+          }`}
+          onError={(e) => {
+            e.target.src = fallbackImg;
+          }}
+        />
+      ))}
+
+      {/* Dark Overlay Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D] via-[#0B120D]/40 to-transparent opacity-85 group-hover:opacity-90 transition-opacity z-10" />
+
+      {/* Content */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 z-20">
+        <div className="w-12 h-1 mb-3 transition-all duration-300 group-hover:w-20" style={{ backgroundColor: cat.accent }} />
+        <h3 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-1">
+          {cat.name}
+        </h3>
+        <p className="text-xs font-mono uppercase tracking-wider text-white/70">
+          {matchingProducts.length} Products
+        </p>
+      </div>
+
+      {/* Slide Indicators */}
+      {displayImages.length > 1 && (
+        <div className="absolute top-4 left-4 z-20 flex gap-1.5 bg-black/30 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
+          {displayImages.slice(0, 6).map((_, dotIdx) => (
+            <div
+              key={dotIdx}
+              className={`h-1 rounded-full transition-all duration-500 ${
+                dotIdx === currentImgIdx % Math.min(displayImages.length, 6)
+                  ? 'w-4 bg-[#C79A44]'
+                  : 'w-1.5 bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Arrow Icon */}
+      <div className="absolute top-6 right-6 w-10 h-10 rounded-full border border-white/40 flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 backdrop-blur-sm bg-white/10 z-20">
+        <Icon path={ICONS.arrowRight} className="w-4 h-4 text-white" />
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
    MAIN HOME CONTENT
 ═══════════════════════════════════════════ */
 function HomeContent() {
@@ -245,19 +357,29 @@ function HomeContent() {
     }, 100);
   };
 
+  const handleExploreStar = (starName) => {
+    if (!starName) return;
+    setSearchTerm(starName);
+    setTimeout(() => {
+      const collectionSection = document.getElementById('collection');
+      if (collectionSection) {
+        collectionSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
   useEffect(() => {
     if (paused || heroSlides.length === 0) return;
     const timer = setInterval(() => setCurrentSlide((p) => (p + 1) % heroSlides.length), 6000);
     return () => clearInterval(timer);
   }, [paused, heroSlides.length]);
 
-  // Robust multi-endpoint & multi-key API fetcher
   useEffect(() => {
     async function fetchPageData() {
       try {
         setLoading(true);
 
-        // 1. Fetch products
+        // Fetch products
         try {
           const resProd = await fetch('/api/products', { cache: 'no-store' });
           if (resProd.ok) {
@@ -269,7 +391,7 @@ function HomeContent() {
           console.error('Products fetch error:', e);
         }
 
-        // 2. Fetch hero slides
+        // Fetch hero slides
         try {
           const resHero = await fetch('/api/hero-slides', { cache: 'no-store' });
           if (resHero.ok) {
@@ -281,7 +403,7 @@ function HomeContent() {
           console.error('Hero slides fetch error:', e);
         }
 
-        // 3. Fetch brand ambassadors (champions)
+        // Fetch brand ambassadors
         try {
           const resChamp = await fetch('/api/champions', { cache: 'no-store' });
           if (resChamp.ok) {
@@ -293,19 +415,13 @@ function HomeContent() {
           console.error('Champions fetch error:', e);
         }
 
-        // 4. Fetch Tapeball Stars with Multi-Route & Multi-Key resolution
+        // Fetch Tapeball Stars
         try {
           let resTape = await fetch('/api/tapeball-stars', { cache: 'no-store' });
-          
-          // Route fallback check if primary endpoint fails
-          if (!resTape.ok) {
-            resTape = await fetch('/api/tapeball', { cache: 'no-store' });
-          }
+          if (!resTape.ok) resTape = await fetch('/api/tapeball', { cache: 'no-store' });
 
           if (resTape.ok) {
             const tapeData = await resTape.json();
-            
-            // Checks all common response payload keys from admin panel API
             const stars = Array.isArray(tapeData)
               ? tapeData
               : (tapeData.tapeballStars || tapeData.tapeBallStars || tapeData.tapeball_stars || tapeData.stars || tapeData.data || tapeData.tapeball || tapeData.players || tapeData.items || []);
@@ -346,7 +462,8 @@ function HomeContent() {
     const pCat = (p.category || '').toLowerCase().trim();
     const pSub = (p.subCategory || p.type || '').toLowerCase().trim();
     const pTitle = (p.name || p.title || '').toLowerCase().trim();
-    const fullText = `${pCat} ${pSub} ${pTitle}`;
+    const pDesc = (p.description || '').toLowerCase().trim();
+    const fullText = `${pCat} ${pSub} ${pTitle} ${pDesc}`;
     const activeCat = activeCategory.toLowerCase().trim();
 
     const query = searchTerm.trim().toLowerCase();
@@ -366,6 +483,15 @@ function HomeContent() {
 
     if (activeCat.includes('cap') || activeCat.includes('hat')) {
       return fullText.includes('cap') || fullText.includes('hat');
+    }
+    if (activeCat.includes('shirt') || activeCat.includes('jersey') || activeCat.includes('apparel')) {
+      return fullText.includes('shirt') || fullText.includes('t-shirt') || fullText.includes('jersey') || fullText.includes('apparel');
+    }
+    if (activeCat.includes('trouser') || activeCat.includes('pant') || activeCat.includes('tracksuit')) {
+      return fullText.includes('trouser') || fullText.includes('pant') || fullText.includes('tracksuit') || fullText.includes('lower');
+    }
+    if (activeCat.includes('indoor')) {
+      return fullText.includes('indoor') || fullText.includes('board') || fullText.includes('ludo') || fullText.includes('carrom') || fullText.includes('chess') || fullText.includes('table tennis');
     }
     if (activeCat.includes('shoe') || activeCat.includes('spike') || activeCat.includes('footwear')) {
       return fullText.includes('shoe') || fullText.includes('spike') || fullText.includes('footwear');
@@ -388,17 +514,6 @@ function HomeContent() {
 
     return pCat === activeCat || pSub === activeCat || pCat.includes(activeCat) || pSub.includes(activeCat);
   });
-
-  const getCategoryCount = (catKeyword) => {
-    const kw = catKeyword.toLowerCase();
-    const count = products.filter(p => {
-      const c = (p.category || '').toLowerCase();
-      const s = (p.subCategory || '').toLowerCase();
-      const t = (p.name || p.title || '').toLowerCase();
-      return c.includes(kw) || s.includes(kw) || t.includes(kw);
-    }).length;
-    return `${count} Products`;
-  };
 
   const slide = heroSlides[currentSlide] || DEFAULT_HERO_SLIDES[0];
 
@@ -499,7 +614,7 @@ function HomeContent() {
               </div>
             </section>
 
-            {/* FEATURED CATEGORIES */}
+            {/* FEATURED CATEGORIES SECTION (DYNAMIC SLIDESHOW) */}
             <section className="py-24 px-4 sm:px-8 bg-white">
               <div className="max-w-7xl mx-auto">
                 <div className="reveal flex flex-col sm:flex-row justify-between items-end mb-14 gap-4">
@@ -512,24 +627,29 @@ function HomeContent() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {[
-                    { name: 'Cricket Bats', key: 'bat', image: '/categories/bats.jpg', accent: '#A6362B' },
-                    { name: 'Protection', key: 'protect', image: '/categories/protection.jpg', accent: '#C79A44' },
-                    { name: 'Footwear', key: 'shoe', image: '/categories/shoes.jpg', accent: '#0B120D' },
-                  ].map((cat, idx) => (
-                    <div key={cat.name} className="reveal group relative h-96 sm:h-[28rem] overflow-hidden cursor-pointer rounded-2xl border border-[#E8E4D9] shadow-sm hover:shadow-xl transition-shadow duration-500" style={{ transitionDelay: `${idx * 100}ms` }} onClick={() => handleCategorySelect(cat.name)}>
-                      <img src={cat.image} alt={cat.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={(e) => { e.target.src = `https://placehold.co/600x800/F4F1EA/0B120D?text=${encodeURIComponent(cat.name)}`; }} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D] via-[#0B120D]/35 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
-                      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                        <div className="w-12 h-1 mb-4 transition-all duration-300 group-hover:w-20" style={{ backgroundColor: cat.accent }} />
-                        <h3 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mb-1">{cat.name}</h3>
-                        <p className="text-xs font-mono uppercase tracking-wider text-white/70">{getCategoryCount(cat.key)}</p>
-                      </div>
-                      <div className="absolute top-6 right-6 w-12 h-12 rounded-full border border-white/40 flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 backdrop-blur-sm bg-white/10">
-                        <Icon path={ICONS.arrowRight} className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
+                {/* Top Main Categories */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                  {FEATURED_CATEGORIES_LIST.slice(0, 3).map((cat, idx) => (
+                    <DynamicCategoryCard
+                      key={cat.name}
+                      cat={cat}
+                      products={products}
+                      onSelect={handleCategorySelect}
+                      index={idx}
+                    />
+                  ))}
+                </div>
+
+                {/* Secondary Apparel & Games Categories */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {FEATURED_CATEGORIES_LIST.slice(3).map((cat, idx) => (
+                    <DynamicCategoryCard
+                      key={cat.name}
+                      cat={cat}
+                      products={products}
+                      onSelect={handleCategorySelect}
+                      index={idx + 3}
+                    />
                   ))}
                 </div>
               </div>
@@ -551,24 +671,37 @@ function HomeContent() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
-                  {champions.map((player, idx) => (
-                    <div key={player._id || player.id || idx} className="reveal group text-center" style={{ transitionDelay: `${idx * 100}ms` }}>
-                      <div className="relative mx-auto w-full max-w-[260px] aspect-[3/4] mb-6 overflow-hidden rounded-2xl bg-white border border-[#E8E4D9] shadow-sm group-hover:border-[#A6362B]/30 group-hover:shadow-lg transition-all duration-500">
-                        <img 
-                          src={player.image || player.imageUrl || player.photo || player.img} 
-                          alt={player.name} 
-                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-110" 
-                          onError={(e) => { e.target.src = `https://placehold.co/400x530/F4F1EA/A6362B?text=${encodeURIComponent(player.name || 'Champion')}`; }} 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/50 via-transparent to-transparent opacity-70" />
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#A6362B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  {champions.map((player, idx) => {
+                    const champName = player.name || player.title || 'Champion';
+                    return (
+                      <div key={player._id || player.id || idx} className="reveal group text-center flex flex-col justify-between items-center" style={{ transitionDelay: `${idx * 100}ms` }}>
+                        <div className="w-full">
+                          <div className="relative mx-auto w-full max-w-[260px] aspect-[3/4] mb-6 overflow-hidden rounded-2xl bg-white border border-[#E8E4D9] shadow-sm group-hover:border-[#A6362B]/30 group-hover:shadow-lg transition-all duration-500">
+                            <img 
+                              src={player.image || player.imageUrl || player.photo || player.img} 
+                              alt={champName} 
+                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-110" 
+                              onError={(e) => { e.target.src = `https://placehold.co/400x530/F4F1EA/A6362B?text=${encodeURIComponent(champName)}`; }} 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/50 via-transparent to-transparent opacity-70" />
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#A6362B] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                          </div>
+                          <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-black uppercase tracking-wider text-[#0B120D] group-hover:text-[#A6362B] transition-colors duration-300">
+                            {champName}
+                          </h3>
+                          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 mt-2">{player.role || player.speciality}</p>
+                        </div>
+
+                        <button
+                          onClick={() => handleExploreStar(champName)}
+                          className="mt-5 w-full max-w-[260px] bg-[#0B120D] hover:bg-[#A6362B] text-white text-[10px] font-mono font-bold uppercase py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-sm hover:shadow-md cursor-pointer"
+                        >
+                          <span>Explore Gear</span>
+                          <Icon path={ICONS.arrowRight} className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-black uppercase tracking-wider text-[#0B120D] group-hover:text-[#A6362B] transition-colors duration-300">
-                        {player.name || player.title}
-                      </h3>
-                      <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500 mt-2">{player.role || player.speciality}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
               <SeamStitch className="absolute bottom-0 left-0 w-full h-3" color="#A6362B" opacity={0.25} />
@@ -590,37 +723,46 @@ function HomeContent() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
                   {tapeballStars.map((star, idx) => {
-                    // Safe field normalization for database variations
                     const starName = star.name || star.title || star.playerName || 'Tapeball Star';
                     const starRole = star.role || star.designation || star.speciality || 'Street Legend';
                     const starLocation = star.city || star.location || star.address || star.town || 'Pakistan';
                     const starImage = star.image || star.imageUrl || star.img || star.photo || star.avatar;
 
                     return (
-                      <div key={star._id || star.id || idx} className="reveal group" style={{ transitionDelay: `${idx * 100}ms` }}>
-                        <div className="relative mb-5 overflow-hidden rounded-2xl bg-[#F4F1EA] border border-[#E8E4D9] shadow-sm group-hover:shadow-xl group-hover:border-[#A6362B]/20 transition-all duration-500">
-                          <div className="aspect-[3/4] relative overflow-hidden">
-                            <img 
-                              src={starImage} 
-                              alt={starName} 
-                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" 
-                              onError={(e) => { e.target.src = `https://placehold.co/400x530/F4F1EA/A6362B?text=${encodeURIComponent(starName)}`; }} 
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/80 via-[#0B120D]/15 to-transparent" />
-                            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#E8E4D9] shadow-sm">
-                              <Icon path={ICONS.location} className="w-3 h-3 text-[#A6362B]" />
-                              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#0B120D]">
-                                {starLocation}
-                              </span>
-                            </div>
-                            <div className="absolute bottom-0 left-0 right-0 p-5">
-                              <h3 className="font-[family-name:var(--font-display)] text-lg font-black uppercase tracking-wider text-white group-hover:text-[#C79A44] transition-colors">
-                                {starName}
-                              </h3>
-                              <p className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/80 mt-1">{starRole}</p>
+                      <div key={star._id || star.id || idx} className="reveal group flex flex-col justify-between" style={{ transitionDelay: `${idx * 100}ms` }}>
+                        <div>
+                          <div className="relative mb-4 overflow-hidden rounded-2xl bg-[#F4F1EA] border border-[#E8E4D9] shadow-sm group-hover:shadow-xl group-hover:border-[#A6362B]/20 transition-all duration-500">
+                            <div className="aspect-[3/4] relative overflow-hidden">
+                              <img 
+                                src={starImage} 
+                                alt={starName} 
+                                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" 
+                                onError={(e) => { e.target.src = `https://placehold.co/400x530/F4F1EA/A6362B?text=${encodeURIComponent(starName)}`; }} 
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#0B120D]/80 via-[#0B120D]/15 to-transparent" />
+                              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#E8E4D9] shadow-sm">
+                                <Icon path={ICONS.location} className="w-3 h-3 text-[#A6362B]" />
+                                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#0B120D]">
+                                  {starLocation}
+                                </span>
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 p-5">
+                                <h3 className="font-[family-name:var(--font-display)] text-lg font-black uppercase tracking-wider text-white group-hover:text-[#C79A44] transition-colors">
+                                  {starName}
+                                </h3>
+                                <p className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/80 mt-1">{starRole}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
+
+                        <button
+                          onClick={() => handleExploreStar(starName)}
+                          className="w-full bg-[#0B120D] hover:bg-[#C79A44] text-white text-[10px] font-mono font-bold uppercase py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-sm hover:shadow-md cursor-pointer"
+                        >
+                          <span>Explore Gear</span>
+                          <Icon path={ICONS.arrowRight} className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     );
                   })}
@@ -630,9 +772,7 @@ function HomeContent() {
           </>
         )}
 
-        {/* ═══════════════════════════════════════════
-            DYNAMIC PRODUCT GRID SECTION
-        ═══════════════════════════════════════════ */}
+        {/* Dynamic Products Grid */}
         <main id="collection" className={`bg-[#F4F1EA] px-4 sm:px-8 ${isFiltered ? 'pt-28 sm:pt-36 pb-24 min-h-[70vh]' : 'py-24'}`}>
           <div className="max-w-7xl mx-auto">
             <div className="reveal text-center mb-14 space-y-3">
