@@ -63,6 +63,18 @@ const EMPTY_WILLOW_FORM = {
   image: '',
 };
 
+const EMPTY_MANUAL_ORDER_FORM = {
+  name: '',
+  phone: '',
+  city: '',
+  address: '',
+  product: '',
+  amount: '',
+  paymentMethod: 'Cash',
+  notes: '',
+  orderSource: 'offline',
+};
+
 async function safeFetch(url, options = {}) {
   const res = await fetch(url, options);
   const text = await res.text();
@@ -111,23 +123,41 @@ const ICONS = {
   star: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385c.116.488-.41.868-.834.613l-4.71-2.834a.563.563 0 00-.582 0l-4.71 2.834c-.423.255-.95-.125-.834-.613l1.285-5.385a.563.563 0 00-.182-.557l-4.204-3.602c-.38-.325-.178-.948.32-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z",
   image: "M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z",
   chart: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z",
-  download: "M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+  download: "M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3",
+  compare: "M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m-3-9L18 12m0 0l-4.5 4.5M18 12H4.5",
+  globe: "M12 21a9 9 0 100-18 9 9 0 000 18zM3.6 9h16.8M3.6 15h16.8",
+  store: "M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.25A2.25 2.25 0 010 18.75V10.5M21 10.5V18.75A2.25 2.25 0 0118.75 21H13.5",
+  menu: "M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5",
+  chevron: "M8.25 4.5l7.5 7.5-7.5 7.5",
 };
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('sales');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [stars, setStars] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [willowImages, setWillowImages] = useState([]);
   const [deliveryRequests, setDeliveryRequests] = useState([]);
   const [reviews, setReviews] = useState([]);
+  
+  // API Sales Data State
+  const [salesAnalytics, setSalesAnalytics] = useState(null);
+
+  // Manual Offline Order State
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [manualFormData, setManualFormData] = useState(EMPTY_MANUAL_ORDER_FORM);
+
+  // Product Comparison States
+  const [productA, setProductA] = useState('');
+  const [productB, setProductB] = useState('');
 
   // Willow Form State
   const [willowFormData, setWillowFormData] = useState(EMPTY_WILLOW_FORM);
 
   // Filters
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState('All');
+  const [deliverySourceFilter, setDeliverySourceFilter] = useState('All');
   const [reviewStatusFilter, setReviewStatusFilter] = useState('All');
 
   // Product Form State
@@ -155,11 +185,25 @@ export default function AdminPage() {
   const dismissTimer = useRef(null);
   const fileInputRef = useRef(null);
 
+  const fetchSalesAnalytics = async () => {
+    try {
+      const data = await safeFetch('/api/sales');
+      const sales = data.analytics || data.data || data;
+      setSalesAnalytics(sales);
+    } catch (err) {
+      console.error('Fetch sales analytics error:', err.message);
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       const data = await safeFetch('/api/products');
       const list = Array.isArray(data) ? data : (data.data || data.products || []);
       setProducts(list);
+      if (list.length >= 2) {
+        setProductA(list[0]?.name || list[0]?.title || '');
+        setProductB(list[1]?.name || list[1]?.title || '');
+      }
     } catch (err) {
       console.error('Fetch products error:', err.message);
     }
@@ -250,6 +294,7 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
+    fetchSalesAnalytics();
     fetchProducts();
     fetchStars();
     fetchHeroSlides();
@@ -278,6 +323,11 @@ export default function AdminPage() {
     } else {
       setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     }
+  };
+
+  const handleManualChange = (e) => {
+    const { name, value } = e.target;
+    setManualFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleStarChange = (e) => {
@@ -314,6 +364,44 @@ export default function AdminPage() {
     setHeroFormData((prev) => ({ ...prev, image: '' }));
     setWillowFormData(EMPTY_WILLOW_FORM);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // --- MANUAL ORDER ENTRY HANDLER ---
+  const handleManualOrderSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const payload = {
+        name: manualFormData.name,
+        phone: manualFormData.phone,
+        city: manualFormData.city || 'Counter / Store',
+        address: manualFormData.address || 'Manual Entry Point',
+        product: manualFormData.product,
+        amount: Number(manualFormData.amount) || getProductPrice(manualFormData.product),
+        paymentMethod: manualFormData.paymentMethod,
+        notes: manualFormData.notes,
+        orderSource: 'offline',
+        status: 'dispatched', // Manual entries marked dispatched by default
+      };
+
+      const data = await safeFetch('/api/delivery-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (data.success || data._id) {
+        showMessage('success', 'Manual offline order recorded successfully!');
+        setManualFormData(EMPTY_MANUAL_ORDER_FORM);
+        setIsManualModalOpen(false);
+        fetchDeliveryRequests();
+        fetchSalesAnalytics();
+      }
+    } catch (err) {
+      showMessage('error', err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // --- PRODUCT HANDLERS ---
@@ -648,6 +736,7 @@ export default function AdminPage() {
       if (data.success) {
         showMessage('success', `Marked as ${status}.`);
         fetchDeliveryRequests();
+        fetchSalesAnalytics();
       }
     } catch (err) {
       showMessage('error', err.message);
@@ -661,6 +750,7 @@ export default function AdminPage() {
       if (data.success) {
         showMessage('success', 'Request deleted.');
         fetchDeliveryRequests();
+        fetchSalesAnalytics();
       }
     } catch (err) {
       showMessage('error', err.message);
@@ -668,10 +758,10 @@ export default function AdminPage() {
   };
 
   const openWhatsAppForRequest = (req) => {
-    const cleanPhone = (req.phone || '').replace(/[^0-9]/g, '');
+    const cleanPhone = (req.phone || req.phoneNumber || '').replace(/[^0-9]/g, '');
     const phone = cleanPhone.startsWith('92') ? cleanPhone : `92${cleanPhone.replace(/^0/, '')}`;
     const text = encodeURIComponent(
-      `Assalam-o-Alaikum ${req.name}, aapki delivery request Kamran Sports ne receive kar li hai. ${req.product ? `Order: ${req.product}. ` : ''}Hum jald hi aapse rabta karenge.`
+      `Assalam-o-Alaikum ${req.name || req.customerName}, aapki delivery request Kamran Sports ne receive kar li hai. ${req.product ? `Order: ${req.product}. ` : ''}Hum jald hi aapse rabta karenge.`
     );
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   };
@@ -706,7 +796,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- SALES ANALYTICS COMPUTATIONS ---
+  // --- SALES ANALYTICS & ONLINE vs OFFLINE COMPUTATION ---
   const getProductPrice = (reqProduct) => {
     if (!reqProduct) return 0;
     const found = products.find(
@@ -715,31 +805,70 @@ export default function AdminPage() {
     return found ? Number(found.price) || 0 : 5000;
   };
 
-  const totalSalesRevenue = deliveryRequests.reduce((sum, req) => {
-    const price = req.price || req.amount || getProductPrice(req.product);
+  const localTotalSalesRevenue = deliveryRequests.reduce((sum, req) => {
+    const price = req.price || req.amount || req.totalAmount || getProductPrice(req.product);
     return sum + price;
   }, 0);
 
-  const dispatchedRevenue = deliveryRequests
+  const localDispatchedRevenue = deliveryRequests
     .filter((req) => (req.status || 'pending') === 'dispatched')
-    .reduce((sum, req) => sum + (req.price || req.amount || getProductPrice(req.product)), 0);
+    .reduce((sum, req) => sum + (req.price || req.amount || req.totalAmount || getProductPrice(req.product)), 0);
 
-  const pendingRevenue = deliveryRequests
+  const localPendingRevenue = deliveryRequests
     .filter((req) => (req.status || 'pending') === 'pending')
-    .reduce((sum, req) => sum + (req.price || req.amount || getProductPrice(req.product)), 0);
+    .reduce((sum, req) => sum + (req.price || req.amount || req.totalAmount || getProductPrice(req.product)), 0);
 
-  const avgOrderValue = deliveryRequests.length > 0 ? Math.round(totalSalesRevenue / deliveryRequests.length) : 0;
+  // Online vs Offline Metrics
+  const onlineRequests = deliveryRequests.filter((r) => (r.orderSource || 'online') === 'online');
+  const offlineRequests = deliveryRequests.filter((r) => r.orderSource === 'offline');
 
-  // Top Selling Items Aggregation
+  const onlineRevenue = onlineRequests.reduce((sum, r) => sum + (r.price || r.amount || r.totalAmount || getProductPrice(r.product)), 0);
+  const offlineRevenue = offlineRequests.reduce((sum, r) => sum + (r.price || r.amount || r.totalAmount || getProductPrice(r.product)), 0);
+
+  const localAvgOrderValue = deliveryRequests.length > 0 ? Math.round(localTotalSalesRevenue / deliveryRequests.length) : 0;
+
   const itemSalesCount = {};
   deliveryRequests.forEach((req) => {
-    const item = req.product || 'Standard Product';
+    const item = req.product || req.productName || 'Standard Product';
     itemSalesCount[item] = (itemSalesCount[item] || 0) + 1;
   });
-  const topSellingItems = Object.entries(itemSalesCount)
+  const localTopSellingItems = Object.entries(itemSalesCount)
     .map(([name, count]) => ({ name, count, revenue: count * getProductPrice(name) }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
+
+  const totalSalesRevenue = salesAnalytics?.totalRevenue ?? salesAnalytics?.totalSalesRevenue ?? localTotalSalesRevenue;
+  const dispatchedRevenue = salesAnalytics?.dispatchedRevenue ?? localDispatchedRevenue;
+  const pendingRevenue = salesAnalytics?.pendingRevenue ?? localPendingRevenue;
+  const avgOrderValue = salesAnalytics?.avgOrderValue ?? localAvgOrderValue;
+  const topSellingItems = salesAnalytics?.topSellingItems || salesAnalytics?.topItems || localTopSellingItems;
+
+  // --- PRODUCT VS PRODUCT COMPARISON HELPER ---
+  const getProductStats = (prodName) => {
+    if (!prodName) return null;
+    const prodObj = products.find((p) => (p.name || p.title) === prodName);
+    const relatedOrders = deliveryRequests.filter(
+      (r) => (r.product || r.productName || '').toLowerCase() === prodName.toLowerCase()
+    );
+    const unitsSold = relatedOrders.length;
+    const revenue = relatedOrders.reduce(
+      (sum, r) => sum + (r.price || r.amount || r.totalAmount || Number(prodObj?.price) || 0),
+      0
+    );
+    const onlineOrders = relatedOrders.filter((r) => (r.orderSource || 'online') === 'online').length;
+    const offlineOrders = relatedOrders.filter((r) => r.orderSource === 'offline').length;
+
+    return {
+      details: prodObj,
+      unitsSold,
+      revenue,
+      onlineOrders,
+      offlineOrders,
+    };
+  };
+
+  const statsA = getProductStats(productA);
+  const statsB = getProductStats(productB);
 
   // --- PDF EXPORT GENERATOR ---
   const handleDownloadPDF = () => {
@@ -753,7 +882,7 @@ export default function AdminPage() {
           <title>Sales & Revenue Report - Kamran Sports</title>
           <style>
             body { font-family: sans-serif; padding: 30px; color: #1a1a1a; }
-            .header { border-bottom: 3px solid #A6362B; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+            .header { border-bottom: 3px solid #A6362B; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-between: space-between; align-items: center; }
             .title { font-size: 22px; font-weight: bold; color: #0B120D; text-transform: uppercase; }
             .subtitle { font-size: 12px; color: #A6362B; font-weight: bold; }
             .date { text-align: right; font-size: 12px; color: #666; }
@@ -768,6 +897,9 @@ export default function AdminPage() {
             .status { font-weight: bold; text-transform: uppercase; font-size: 10px; padding: 3px 6px; border-radius: 4px; }
             .dispatched { background: #d1fae5; color: #047857; }
             .pending { background: #ffedd5; color: #c2410c; }
+            .source { font-weight: bold; text-transform: uppercase; font-size: 9px; padding: 2px 5px; border-radius: 3px; }
+            .online { background: #dbeafe; color: #1e40af; }
+            .offline { background: #fef3c7; color: #92400e; }
             .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 15px; }
           </style>
         </head>
@@ -784,20 +916,20 @@ export default function AdminPage() {
 
           <div class="kpi-grid">
             <div class="kpi-card">
-              <div class="kpi-title">Total Revenue</div>
+              <div class="kpi-title">Total Gross Revenue</div>
               <div class="kpi-value">PKR ${totalSalesRevenue.toLocaleString()}</div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-title">Dispatched Revenue</div>
-              <div class="kpi-value">PKR ${dispatchedRevenue.toLocaleString()}</div>
+              <div class="kpi-title">Online Revenue</div>
+              <div class="kpi-value">PKR ${onlineRevenue.toLocaleString()}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Offline Revenue</div>
+              <div class="kpi-value">PKR ${offlineRevenue.toLocaleString()}</div>
             </div>
             <div class="kpi-card">
               <div class="kpi-title">Total Orders</div>
               <div class="kpi-value">${deliveryRequests.length}</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-title">Avg Order Value</div>
-              <div class="kpi-value">PKR ${avgOrderValue.toLocaleString()}</div>
             </div>
           </div>
 
@@ -806,22 +938,24 @@ export default function AdminPage() {
             <thead>
               <tr>
                 <th>Customer</th>
+                <th>Source</th>
                 <th>Phone</th>
                 <th>City</th>
                 <th>Product</th>
                 <th>Status</th>
-                <th>Est. Amount</th>
+                <th>Amount</th>
               </tr>
             </thead>
             <tbody>
               ${deliveryRequests.map(r => `
                 <tr>
-                  <td><strong>${r.name}</strong></td>
-                  <td>${r.phone}</td>
+                  <td><strong>${r.name || r.customerName}</strong></td>
+                  <td><span class="source ${r.orderSource === 'offline' ? 'offline' : 'online'}">${r.orderSource || 'online'}</span></td>
+                  <td>${r.phone || r.phoneNumber}</td>
                   <td>${r.city || 'N/A'}</td>
-                  <td>${r.product || 'Standard Product'}</td>
+                  <td>${r.product || r.productName || 'Standard Product'}</td>
                   <td><span class="status ${r.status === 'dispatched' ? 'dispatched' : 'pending'}">${r.status || 'pending'}</span></td>
-                  <td style="font-family: monospace;">PKR ${getProductPrice(r.product).toLocaleString()}</td>
+                  <td style="font-family: monospace;">PKR ${(r.price || r.amount || r.totalAmount || getProductPrice(r.product)).toLocaleString()}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -844,9 +978,11 @@ export default function AdminPage() {
     printWindow.document.close();
   };
 
-  const filteredDeliveryRequests = deliveryRequests.filter((r) =>
-    deliveryStatusFilter === 'All' ? true : (r.status || 'pending') === deliveryStatusFilter
-  );
+  const filteredDeliveryRequests = deliveryRequests.filter((r) => {
+    const matchesStatus = deliveryStatusFilter === 'All' ? true : (r.status || 'pending') === deliveryStatusFilter;
+    const matchesSource = deliverySourceFilter === 'All' ? true : (r.orderSource || 'online') === deliverySourceFilter;
+    return matchesStatus && matchesSource;
+  });
   const pendingDeliveryCount = deliveryRequests.filter((r) => (r.status || 'pending') === 'pending').length;
 
   const filteredReviews = reviews.filter((r) =>
@@ -874,118 +1010,261 @@ export default function AdminPage() {
   const inStockCount = products.filter((p) => p.inStock !== false).length;
   const outOfStockCount = products.length - inStockCount;
 
+  const navBtnClass = (active) =>
+    `group relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider transition-all duration-150 ${
+      active
+        ? 'bg-white/[0.08] text-white shadow-[inset_3px_0_0_0_#C79A44]'
+        : 'text-white/45 hover:bg-white/[0.04] hover:text-white/80'
+    }`;
+
+  const PAGE_TITLES = {
+    sales: 'Sales & Revenue Dashboard',
+    'manage-hero': 'Hero Slides',
+    'add-hero': editingHeroId ? 'Edit Hero Slide' : 'Add Hero Slide',
+    manage: 'Product Catalog',
+    add: editingId ? 'Edit Product' : 'Add New Product',
+    'manage-stars': 'Store Stars',
+    'add-star': editingStarId ? 'Edit Star' : 'Add New Star',
+    'manage-willow': 'Willow Gallery',
+    'add-willow': 'Add Willow Image',
+    'delivery-requests': 'Delivery Requests',
+    reviews: 'Customer Reviews',
+  };
+
+  const NavBadge = ({ children }) => (
+    <span className="ml-auto text-[10px] font-bold bg-white/10 text-white/70 px-1.5 py-0.5 rounded-full">{children}</span>
+  );
+
   return (
-    <div className="min-h-screen bg-[#FAFAF7] text-[#1a1a1a] font-sans antialiased">
-      <header className="bg-white border-b-4 border-[#A6362B] sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className="bg-[#F4F1EA] rounded-lg p-2 flex items-center justify-center shrink-0">
-              <img src="/logo.jpg" alt="Kamran Sports" className="h-9 w-auto object-contain" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-bold text-lg text-[#0B120D] tracking-wide uppercase leading-tight">
-                Kamran Sports
-              </h1>
-              <p className="text-[11px] font-medium text-[#A6362B] tracking-[0.2em] uppercase">
-                Inventory, Sales & Admin Portal
-              </p>
-            </div>
+    <div className="min-h-screen bg-[#F5F3ED] text-[#1a1a1a] font-sans antialiased flex">
+      {/* MOBILE SIDEBAR OVERLAY */}
+      {sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-40 lg:hidden" />
+      )}
+
+      {/* SIDEBAR */}
+      <aside
+        className={`fixed lg:sticky top-0 left-0 h-screen w-[272px] shrink-0 bg-gradient-to-b from-[#0B120D] to-[#0e1712] border-r border-white/5 z-50 flex flex-col transition-transform duration-300 ease-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="flex items-center gap-3 px-5 py-6">
+          <div className="bg-white/[0.06] rounded-xl p-2 flex items-center justify-center shrink-0 ring-1 ring-white/10">
+            <img src="/logo.jpg" alt="Kamran Sports" className="h-9 w-auto object-contain" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-bold text-[15px] text-white tracking-wide uppercase leading-tight truncate">Kamran Sports</h1>
+            <p className="text-[10px] font-semibold text-[#C79A44] tracking-[0.2em] uppercase">Admin Portal</p>
+          </div>
+          <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden text-white/50 hover:text-white shrink-0">
+            <Icon path={ICONS.close} className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="mx-5 h-px bg-white/[0.06]" />
+
+        <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-5">
+          <div className="space-y-1">
+            <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Overview</p>
+            <button onClick={() => { switchTab('sales'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'sales')}>
+              <Icon path={ICONS.chart} className="w-4 h-4 shrink-0" />
+              <span>Sales & Analytics</span>
+            </button>
           </div>
 
+          <div className="space-y-1">
+            <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Catalog</p>
+            <button onClick={() => { switchTab('manage'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'manage')}>
+              <Icon path={ICONS.package} className="w-4 h-4 shrink-0" />
+              <span>Products</span>
+              <NavBadge>{filteredProducts.length}</NavBadge>
+            </button>
+            <button onClick={() => { handleCancelEdit(); switchTab('add'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'add')}>
+              <Icon path={editingId ? ICONS.edit : ICONS.plus} className="w-4 h-4 shrink-0" />
+              <span>{editingId ? 'Edit Product' : 'Add Product'}</span>
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Storefront</p>
+            <button onClick={() => { switchTab('manage-hero'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'manage-hero')}>
+              <Icon path={ICONS.image} className="w-4 h-4 shrink-0" />
+              <span>Hero Slides</span>
+              <NavBadge>{heroSlides.length}</NavBadge>
+            </button>
+            <button
+              onClick={() => { handleCancelHeroEdit(); switchTab('add-hero'); setSidebarOpen(false); }}
+              className={navBtnClass(activeTab === 'add-hero')}
+            >
+              <Icon path={editingHeroId ? ICONS.edit : ICONS.plus} className="w-4 h-4 shrink-0" />
+              <span>{editingHeroId ? 'Edit Hero Slide' : 'Add Hero Slide'}</span>
+            </button>
+            <button onClick={() => { switchTab('manage-willow'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'manage-willow')}>
+              <Icon path={ICONS.image} className="w-4 h-4 shrink-0" />
+              <span>Willow Gallery</span>
+              <NavBadge>{willowImages.length}</NavBadge>
+            </button>
+            <button
+              onClick={() => { setWillowFormData(EMPTY_WILLOW_FORM); switchTab('add-willow'); setSidebarOpen(false); }}
+              className={navBtnClass(activeTab === 'add-willow')}
+            >
+              <Icon path={ICONS.plus} className="w-4 h-4 shrink-0" />
+              <span>Add Willow Image</span>
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Team</p>
+            <button onClick={() => { switchTab('manage-stars'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'manage-stars')}>
+              <Icon path={ICONS.star} className="w-4 h-4 shrink-0" />
+              <span>Stars</span>
+              <NavBadge>{stars.length}</NavBadge>
+            </button>
+            <button
+              onClick={() => { handleCancelStarEdit(); switchTab('add-star'); setSidebarOpen(false); }}
+              className={navBtnClass(activeTab === 'add-star')}
+            >
+              <Icon path={editingStarId ? ICONS.edit : ICONS.plus} className="w-4 h-4 shrink-0" />
+              <span>{editingStarId ? 'Edit Star' : 'Add Star'}</span>
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Orders & Feedback</p>
+            <button onClick={() => { switchTab('delivery-requests'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'delivery-requests')}>
+              <Icon path={ICONS.package} className="w-4 h-4 shrink-0" />
+              <span>Delivery Requests</span>
+              {pendingDeliveryCount > 0 && <NavBadge>{pendingDeliveryCount}</NavBadge>}
+            </button>
+            <button onClick={() => { switchTab('reviews'); setSidebarOpen(false); }} className={navBtnClass(activeTab === 'reviews')}>
+              <Icon path={ICONS.star} className="w-4 h-4 shrink-0" />
+              <span>Reviews</span>
+              {pendingReviewCount > 0 && <NavBadge>{pendingReviewCount}</NavBadge>}
+            </button>
+          </div>
+        </nav>
+
+        <div className="p-4 pt-3">
+          <div className="mx-1 mb-3 h-px bg-white/[0.06]" />
           <a
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 bg-[#0B120D] hover:bg-[#A6362B] text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all uppercase tracking-wider"
+            className="flex items-center justify-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] text-white/80 hover:text-white text-[11px] font-bold px-4 py-3 rounded-xl transition-colors uppercase tracking-wider ring-1 ring-white/10"
           >
-            <span>Live Store</span>
-            <Icon path={ICONS.external} className="w-3.5 h-3.5" />
+            <span>View Live Store</span>
+            <Icon path={ICONS.external} className="w-3.5 h-3.5 text-[#C79A44]" />
           </a>
         </div>
-      </header>
+      </aside>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
+      {/* MAIN COLUMN */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* TOP BAR */}
+        <header className="sticky top-0 z-30 bg-[#F5F3ED]/90 backdrop-blur-md border-b border-[#E8E4D9]">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#0B120D] shrink-0">
+                <Icon path={ICONS.menu} className="w-6 h-6" />
+              </button>
+              <div className="min-w-0">
+                <h2 className="font-bold text-lg text-[#0B120D] tracking-wide truncate">{PAGE_TITLES[activeTab] || 'Dashboard'}</h2>
+                <p className="text-[11px] text-neutral-400 hidden sm:block">Inventory, Sales & Admin Portal</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsManualModalOpen(true)}
+              className="bg-[#0B120D] hover:bg-[#A6362B] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all uppercase tracking-wider flex items-center gap-1.5 shadow-sm shrink-0"
+            >
+              <Icon path={ICONS.plus} className="w-4 h-4 text-[#C79A44]" />
+              <span className="hidden sm:inline">Record Manual Entry</span>
+              <span className="sm:hidden">Add Order</span>
+            </button>
+          </div>
+        </header>
+
+      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
         {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 mb-8">
-          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
+          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase text-neutral-400 mb-1">Total Products</p>
                 <p className="text-3xl font-bold text-[#0B120D] font-mono">{products.length}</p>
               </div>
-              <div className="p-3 bg-[#0B120D] rounded-xl">
+              <div className="p-3 bg-[#0B120D] rounded-xl group-hover:scale-105 transition-transform">
                 <Icon path={ICONS.inventory} className="w-5 h-5 text-[#C79A44]" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase text-emerald-600 mb-1">In Stock</p>
                 <p className="text-3xl font-bold text-emerald-700 font-mono">{inStockCount}</p>
               </div>
-              <div className="p-3 bg-emerald-600 rounded-xl">
+              <div className="p-3 bg-emerald-600 rounded-xl group-hover:scale-105 transition-transform">
                 <Icon path={ICONS.stock} className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase text-[#A6362B] mb-1">Out of Stock</p>
                 <p className="text-3xl font-bold text-[#A6362B] font-mono">{outOfStockCount}</p>
               </div>
-              <div className="p-3 bg-[#A6362B] rounded-xl">
+              <div className="p-3 bg-[#A6362B] rounded-xl group-hover:scale-105 transition-transform">
                 <Icon path={ICONS.outOfStock} className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase text-[#C79A44] mb-1">Total Stars</p>
                 <p className="text-3xl font-bold text-[#0B120D] font-mono">{stars.length}</p>
               </div>
-              <div className="p-3 bg-[#C79A44] rounded-xl">
+              <div className="p-3 bg-[#C79A44] rounded-xl group-hover:scale-105 transition-transform">
                 <Icon path={ICONS.star} className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase text-blue-600 mb-1">Hero Slides</p>
                 <p className="text-3xl font-bold text-[#0B120D] font-mono">{heroSlides.length}</p>
               </div>
-              <div className="p-3 bg-blue-600 rounded-xl">
+              <div className="p-3 bg-blue-600 rounded-xl group-hover:scale-105 transition-transform">
                 <Icon path={ICONS.image} className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase text-orange-600 mb-1">Pending Deliveries</p>
                 <p className="text-3xl font-bold text-orange-700 font-mono">{pendingDeliveryCount}</p>
               </div>
-              <div className="p-3 bg-orange-600 rounded-xl">
+              <div className="p-3 bg-orange-600 rounded-xl group-hover:scale-105 transition-transform">
                 <Icon path={ICONS.package} className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#E8E4D9] p-5 shadow-sm">
+          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase text-purple-600 mb-1">Pending Reviews</p>
                 <p className="text-3xl font-bold text-purple-700 font-mono">{pendingReviewCount}</p>
               </div>
-              <div className="p-3 bg-purple-600 rounded-xl">
+              <div className="p-3 bg-purple-600 rounded-xl group-hover:scale-105 transition-transform">
                 <Icon path={ICONS.star} className="w-5 h-5 text-white" />
               </div>
             </div>
@@ -1003,218 +1282,252 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Tab Switcher */}
-        <div className="bg-[#F4F1EA] border border-[#E8E4D9] p-1.5 rounded-xl mb-8 flex flex-wrap gap-2">
-          {/* Sales Tab */}
-          <button
-            onClick={() => switchTab('sales')}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'sales' ? 'bg-[#A6362B] text-white shadow-sm' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.chart} className="w-4 h-4" />
-            <span>Sales & Analytics</span>
-          </button>
-
-          {/* Hero Section Tabs */}
-          <button
-            onClick={() => switchTab('manage-hero')}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'manage-hero' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.image} className="w-4 h-4" />
-            <span>Hero Slides ({heroSlides.length})</span>
-          </button>
-
-          <button
-            onClick={() => {
-              handleCancelHeroEdit();
-              switchTab('add-hero');
-            }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'add-hero' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={editingHeroId ? ICONS.edit : ICONS.plus} className="w-4 h-4" />
-            <span>{editingHeroId ? 'Edit Hero Slide' : 'Add Hero Slide'}</span>
-          </button>
-
-          {/* Catalog Tabs */}
-          <button
-            onClick={() => switchTab('manage')}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'manage' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.package} className="w-4 h-4" />
-            <span>Products ({filteredProducts.length})</span>
-          </button>
-
-          <button
-            onClick={() => {
-              handleCancelEdit();
-              switchTab('add');
-            }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'add' ? 'bg-[#A6362B] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={editingId ? ICONS.edit : ICONS.plus} className="w-4 h-4" />
-            <span>{editingId ? 'Edit Product' : 'Add Product'}</span>
-          </button>
-
-          {/* Stars Tabs */}
-          <button
-            onClick={() => switchTab('manage-stars')}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'manage-stars' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.star} className="w-4 h-4" />
-            <span>Stars ({stars.length})</span>
-          </button>
-
-          <button
-            onClick={() => {
-              handleCancelStarEdit();
-              switchTab('add-star');
-            }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'add-star' ? 'bg-[#C79A44] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={editingStarId ? ICONS.edit : ICONS.plus} className="w-4 h-4" />
-            <span>{editingStarId ? 'Edit Star' : 'Add Star'}</span>
-          </button>
-
-          {/* Willow Gallery Tabs */}
-          <button
-            onClick={() => switchTab('manage-willow')}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'manage-willow' ? 'bg-[#0B120D] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.image} className="w-4 h-4" />
-            <span>Willow Gallery ({willowImages.length})</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setWillowFormData(EMPTY_WILLOW_FORM);
-              switchTab('add-willow');
-            }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'add-willow' ? 'bg-[#C79A44] text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.plus} className="w-4 h-4" />
-            <span>Add Willow Image</span>
-          </button>
-
-          {/* Delivery Requests Tab */}
-          <button
-            onClick={() => switchTab('delivery-requests')}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'delivery-requests' ? 'bg-orange-600 text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.package} className="w-4 h-4" />
-            <span>Delivery Requests {pendingDeliveryCount > 0 && `(${pendingDeliveryCount})`}</span>
-          </button>
-
-          {/* Reviews Tab */}
-          <button
-            onClick={() => switchTab('reviews')}
-            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
-              activeTab === 'reviews' ? 'bg-purple-600 text-white' : 'text-neutral-500 hover:text-[#0B120D]'
-            }`}
-          >
-            <Icon path={ICONS.star} className="w-4 h-4" />
-            <span>Reviews {pendingReviewCount > 0 && `(${pendingReviewCount})`}</span>
-          </button>
-        </div>
-
         {/* TAB 0: SALES & REVENUE DASHBOARD */}
         {activeTab === 'sales' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Header Action Bar */}
-            <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
               <div>
-                <h2 className="font-bold text-lg text-[#0B120D] uppercase tracking-wide">
+                <h2 className="font-bold text-lg text-[#0B120D] tracking-wide flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-[#A6362B] rounded-full inline-block" />
                   Sales & Revenue Dashboard
                 </h2>
-                <p className="text-xs text-neutral-500">Real-time revenue analytics & order metrics overview</p>
+                <p className="text-xs text-neutral-500 mt-1 ml-4">Real-time revenue analytics, online/offline breakdown & order metrics</p>
               </div>
 
-              <button
-                onClick={handleDownloadPDF}
-                className="bg-[#0B120D] hover:bg-[#A6362B] text-white text-xs font-bold px-5 py-3 rounded-xl transition flex items-center gap-2 shadow-sm"
-              >
-                <Icon path={ICONS.download} className="w-4 h-4 text-[#C79A44]" />
-                <span>Download PDF Sales Report</span>
-              </button>
+              <div className="flex items-center gap-2.5 w-full lg:w-auto">
+                <button
+                  onClick={() => setIsManualModalOpen(true)}
+                  className="flex-1 lg:flex-none bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shadow-[#C79A44]/20"
+                >
+                  <Icon path={ICONS.plus} className="w-4 h-4" />
+                  <span>Manual Order</span>
+                </button>
+                <button
+                  onClick={fetchSalesAnalytics}
+                  className="flex-1 lg:flex-none bg-white hover:bg-[#FAFAF7] text-[#0B120D] border border-[#E0DCD1] text-xs font-bold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <Icon path={ICONS.chart} className="w-4 h-4 text-neutral-400" />
+                  <span>Refresh</span>
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  className="flex-1 lg:flex-none bg-[#0B120D] hover:bg-[#1a251c] text-white text-xs font-bold px-5 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Icon path={ICONS.download} className="w-4 h-4 text-[#C79A44]" />
+                  <span>PDF Report</span>
+                </button>
+              </div>
             </div>
 
             {/* Main KPI Revenue Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
-                <p className="text-xs font-bold uppercase text-neutral-400 mb-1">Total Gross Revenue</p>
-                <h3 className="text-2xl font-bold font-mono text-[#0B120D]">PKR {totalSalesRevenue.toLocaleString()}</h3>
-                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded mt-2 inline-block">
+              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
+                <span className="absolute top-0 left-0 w-full h-1 bg-[#0B120D]" />
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-neutral-400">Total Gross Revenue</p>
+                  <div className="p-2 bg-[#0B120D]/5 text-[#0B120D] rounded-lg">
+                    <Icon path={ICONS.chart} className="w-4 h-4" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold font-mono text-[#0B120D] tracking-tight">PKR {totalSalesRevenue.toLocaleString()}</h3>
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded-md mt-3 inline-block">
                   Calculated across all orders
                 </span>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
-                <p className="text-xs font-bold uppercase text-emerald-600 mb-1">Completed / Dispatched Revenue</p>
-                <h3 className="text-2xl font-bold font-mono text-emerald-700">PKR {dispatchedRevenue.toLocaleString()}</h3>
-                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded mt-2 inline-block">
-                  {deliveryRequests.filter((r) => r.status === 'dispatched').length} Orders Dispatched
+              {/* Online Sales Metric */}
+              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
+                <span className="absolute top-0 left-0 w-full h-1 bg-blue-600" />
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-blue-600">Online Store Revenue</p>
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <Icon path={ICONS.globe} className="w-4 h-4" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold font-mono text-blue-800 tracking-tight">PKR {onlineRevenue.toLocaleString()}</h3>
+                <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded-md mt-3 inline-block">
+                  {onlineRequests.length} Online Web Orders
                 </span>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
-                <p className="text-xs font-bold uppercase text-orange-600 mb-1">Pending Orders Value</p>
-                <h3 className="text-2xl font-bold font-mono text-orange-700">PKR {pendingRevenue.toLocaleString()}</h3>
-                <span className="text-[10px] text-orange-700 font-bold bg-orange-100 px-2 py-0.5 rounded mt-2 inline-block">
-                  {pendingDeliveryCount} Pending Processing
+              {/* Offline / Manual Sales Metric */}
+              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
+                <span className="absolute top-0 left-0 w-full h-1 bg-amber-500" />
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">Offline Counter Revenue</p>
+                  <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                    <Icon path={ICONS.store} className="w-4 h-4" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold font-mono text-amber-800 tracking-tight">PKR {offlineRevenue.toLocaleString()}</h3>
+                <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-1 rounded-md mt-3 inline-block">
+                  {offlineRequests.length} Manual Counter Entries
                 </span>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
-                <p className="text-xs font-bold uppercase text-[#C79A44] mb-1">Average Order Value (AOV)</p>
-                <h3 className="text-2xl font-bold font-mono text-[#0B120D]">PKR {avgOrderValue.toLocaleString()}</h3>
-                <span className="text-[10px] text-[#C79A44] font-bold bg-[#FDF8EE] px-2 py-0.5 rounded mt-2 inline-block">
+              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
+                <span className="absolute top-0 left-0 w-full h-1 bg-[#C79A44]" />
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#C79A44]">Average Order Value</p>
+                  <div className="p-2 bg-[#FDF8EE] text-[#C79A44] rounded-lg">
+                    <Icon path={ICONS.package} className="w-4 h-4" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold font-mono text-[#0B120D] tracking-tight">PKR {avgOrderValue.toLocaleString()}</h3>
+                <span className="text-[10px] text-[#96742f] font-bold bg-[#FDF8EE] px-2 py-1 rounded-md mt-3 inline-block">
                   Per Order Average
                 </span>
               </div>
             </div>
 
+            {/* PRODUCT VS PRODUCT COMPARISON SECTION */}
+            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02]">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8 pb-5 border-b border-[#E8E4D9]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-[#A6362B]/10 text-[#A6362B] rounded-xl">
+                    <Icon path={ICONS.compare} className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm uppercase tracking-wide text-[#0B120D]">Product vs Product Comparison</h3>
+                    <p className="text-xs text-neutral-500">Compare sales volume, total revenue, and channel distribution</p>
+                  </div>
+                </div>
+
+                {/* Product Selectors */}
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                  <div className="relative flex-1 lg:flex-none lg:w-56">
+                    <select
+                      value={productA}
+                      onChange={(e) => setProductA(e.target.value)}
+                      className="w-full appearance-none bg-[#FAFAF7] border border-[#E0DCD1] text-xs font-bold pl-3 pr-9 py-2.5 rounded-xl text-[#0B120D] focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20 transition-colors"
+                    >
+                      <option value="">Select Product A</option>
+                      {products.map((p) => (
+                        <option key={p._id} value={p.name || p.title}>{p.name || p.title}</option>
+                      ))}
+                    </select>
+                    <Icon path={ICONS.chevron} className="w-3.5 h-3.5 text-neutral-400 rotate-90 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+
+                  <span className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-[#0B120D] text-[#C79A44] text-[10px] font-bold uppercase">
+                    Vs
+                  </span>
+
+                  <div className="relative flex-1 lg:flex-none lg:w-56">
+                    <select
+                      value={productB}
+                      onChange={(e) => setProductB(e.target.value)}
+                      className="w-full appearance-none bg-[#FAFAF7] border border-[#E0DCD1] text-xs font-bold pl-3 pr-9 py-2.5 rounded-xl text-[#0B120D] focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20 transition-colors"
+                    >
+                      <option value="">Select Product B</option>
+                      {products.map((p) => (
+                        <option key={p._id} value={p.name || p.title}>{p.name || p.title}</option>
+                      ))}
+                    </select>
+                    <Icon path={ICONS.chevron} className="w-3.5 h-3.5 text-neutral-400 rotate-90 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Comparison Matrix Display */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Product A Card */}
+                <div className="relative bg-[#FAFAF7] rounded-2xl border border-[#E8E4D9] overflow-hidden">
+                  <span className="absolute top-0 left-0 w-full h-1 bg-[#0B120D]" />
+                  <div className="p-5">
+                    {statsA ? (
+                      <div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <SafeImage src={statsA.details?.image} alt={productA} className="w-14 h-14 object-cover rounded-xl border border-[#E0DCD1]" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded-full">Product A</span>
+                            <h4 className="font-bold text-sm text-[#0B120D] mt-1.5 truncate">{productA}</h4>
+                            <p className="text-xs text-neutral-500 font-mono">PKR {Number(statsA.details?.price || 0).toLocaleString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Units Sold</p>
+                            <p className="text-xl font-bold font-mono text-[#0B120D]">{statsA.unitsSold}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Total Revenue</p>
+                            <p className="text-xl font-bold font-mono text-[#A6362B]">PKR {statsA.revenue.toLocaleString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-[#E0DCD1] flex justify-between gap-2">
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md">Online: {statsA.onlineOrders}</span>
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Offline: {statsA.offlineOrders}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-400 italic text-center py-8">Select Product A to compare</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Product B Card */}
+                <div className="relative bg-[#FAFAF7] rounded-2xl border border-[#E8E4D9] overflow-hidden">
+                  <span className="absolute top-0 left-0 w-full h-1 bg-[#A6362B]" />
+                  <div className="p-5">
+                    {statsB ? (
+                      <div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <SafeImage src={statsB.details?.image} alt={productB} className="w-14 h-14 object-cover rounded-xl border border-[#E0DCD1]" />
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold uppercase bg-[#A6362B] text-white px-2 py-0.5 rounded-full">Product B</span>
+                            <h4 className="font-bold text-sm text-[#0B120D] mt-1.5 truncate">{productB}</h4>
+                            <p className="text-xs text-neutral-500 font-mono">PKR {Number(statsB.details?.price || 0).toLocaleString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Units Sold</p>
+                            <p className="text-xl font-bold font-mono text-[#0B120D]">{statsB.unitsSold}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Total Revenue</p>
+                            <p className="text-xl font-bold font-mono text-[#A6362B]">PKR {statsB.revenue.toLocaleString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-[#E0DCD1] flex justify-between gap-2">
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md">Online: {statsB.onlineOrders}</span>
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Offline: {statsB.offlineOrders}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-400 italic text-center py-8">Select Product B to compare</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Charts & Breakdown Section */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Order Status Breakdown Bars */}
-              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
-                <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Order Status Breakdown</h3>
+              {/* Order Source & Status Breakdown */}
+              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02]">
+                <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Sales Source & Status Breakdown</h3>
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-xs font-bold mb-1">
-                      <span className="text-emerald-700 uppercase">Dispatched Orders</span>
+                      <span className="text-blue-700 uppercase">Online Website Sales</span>
                       <span>
                         {deliveryRequests.length > 0
-                          ? Math.round((deliveryRequests.filter((r) => r.status === 'dispatched').length / deliveryRequests.length) * 100)
+                          ? Math.round((onlineRequests.length / deliveryRequests.length) * 100)
                           : 0}%
                       </span>
                     </div>
                     <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
                       <div
-                        className="bg-emerald-600 h-full rounded-full transition-all duration-500"
+                        className="bg-blue-600 h-full rounded-full transition-all duration-500"
                         style={{
-                          width: `${
-                            deliveryRequests.length > 0
-                              ? (deliveryRequests.filter((r) => r.status === 'dispatched').length / deliveryRequests.length) * 100
-                              : 0
-                          }%`,
+                          width: `${deliveryRequests.length > 0 ? (onlineRequests.length / deliveryRequests.length) * 100 : 0}%`,
                         }}
                       />
                     </div>
@@ -1222,20 +1535,18 @@ export default function AdminPage() {
 
                   <div>
                     <div className="flex justify-between text-xs font-bold mb-1">
-                      <span className="text-orange-600 uppercase">Pending Requests</span>
+                      <span className="text-amber-700 uppercase">Offline Counter Sales</span>
                       <span>
                         {deliveryRequests.length > 0
-                          ? Math.round((pendingDeliveryCount / deliveryRequests.length) * 100)
+                          ? Math.round((offlineRequests.length / deliveryRequests.length) * 100)
                           : 0}%
                       </span>
                     </div>
                     <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
                       <div
-                        className="bg-orange-500 h-full rounded-full transition-all duration-500"
+                        className="bg-amber-500 h-full rounded-full transition-all duration-500"
                         style={{
-                          width: `${
-                            deliveryRequests.length > 0 ? (pendingDeliveryCount / deliveryRequests.length) * 100 : 0
-                          }%`,
+                          width: `${deliveryRequests.length > 0 ? (offlineRequests.length / deliveryRequests.length) * 100 : 0}%`,
                         }}
                       />
                     </div>
@@ -1244,12 +1555,12 @@ export default function AdminPage() {
               </div>
 
               {/* Top Selling Products List */}
-              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
+              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02]">
                 <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Top Selling Items Breakdown</h3>
                 {topSellingItems.length === 0 ? (
                   <p className="text-xs text-neutral-400 italic">No sales data recorded yet.</p>
                 ) : (
-                  <div className="divide-y divide-[#F0EDE4]">
+                  <div className="divide-y divide-[#F0EDE4]/80">
                     {topSellingItems.map((item, idx) => (
                       <div key={idx} className="py-2.5 flex justify-between items-center">
                         <div>
@@ -1270,7 +1581,7 @@ export default function AdminPage() {
 
         {/* TAB 1: ADD / EDIT HERO SLIDE */}
         {activeTab === 'add-hero' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">
                 {editingHeroId ? 'Edit Hero Slide Details' : 'Add New Hero Slide Image'}
@@ -1286,7 +1597,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-8 space-y-5">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Badge Text (Tagline) *</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Badge Text (Tagline) *</label>
                     <input
                       type="text"
                       name="badge"
@@ -1294,12 +1605,12 @@ export default function AdminPage() {
                       onChange={handleHeroChange}
                       required
                       placeholder="STEP UP YOUR GAME"
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Main Title *</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Main Title *</label>
                     <input
                       type="text"
                       name="title"
@@ -1307,12 +1618,12 @@ export default function AdminPage() {
                       onChange={handleHeroChange}
                       required
                       placeholder="SPIKE INTO ACTION"
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Subtitle / Description *</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Subtitle / Description *</label>
                     <textarea
                       name="subtitle"
                       value={heroFormData.subtitle}
@@ -1320,31 +1631,31 @@ export default function AdminPage() {
                       required
                       rows="3"
                       placeholder="Cricket & football footwear engineered for grip, speed and support on any pitch."
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Button CTA Text</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Button CTA Text</label>
                       <input
                         type="text"
                         name="cta"
                         value={heroFormData.cta}
                         onChange={handleHeroChange}
                         placeholder="SHOP FOOTWEAR"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Button Link URL</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Button Link URL</label>
                       <input
                         type="text"
                         name="link"
                         value={heroFormData.link}
                         onChange={handleHeroChange}
                         placeholder="#collection"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                   </div>
@@ -1352,7 +1663,7 @@ export default function AdminPage() {
 
                 <div className="lg:col-span-4 space-y-6">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Hero Image *</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Hero Image *</label>
                     <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                       {imagePreview ? (
@@ -1389,8 +1700,8 @@ export default function AdminPage() {
 
         {/* TAB 2: MANAGE HERO SLIDES */}
         {activeTab === 'manage-hero' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">Active Hero Slides Banner List</h2>
               <button
                 onClick={() => {
@@ -1403,14 +1714,14 @@ export default function AdminPage() {
               </button>
             </div>
 
-            <div className="divide-y divide-[#F0EDE4]">
+            <div className="divide-y divide-[#F0EDE4]/80">
               {heroSlides.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 text-sm">
                   No hero slides found in database. Add one to display on home page!
                 </div>
               ) : (
                 heroSlides.map((slide) => (
-                  <div key={slide._id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div key={slide._id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-[#FAFAF7] transition-colors">
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                       <SafeImage src={slide.image} alt={slide.title} className="w-24 h-16 object-cover rounded-lg border border-[#E8E4D9]" />
                       <div>
@@ -1445,7 +1756,7 @@ export default function AdminPage() {
 
         {/* TAB 3: ADD PRODUCT */}
         {activeTab === 'add' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">
                 {editingId ? 'Edit Product Details' : 'Add New Product'}
@@ -1462,7 +1773,7 @@ export default function AdminPage() {
                 <div className="lg:col-span-8 space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Product Code *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Product Code *</label>
                       <input
                         type="text"
                         name="productId"
@@ -1470,11 +1781,11 @@ export default function AdminPage() {
                         onChange={handleChange}
                         required
                         placeholder="KS-101"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm font-mono focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm font-mono transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Product Title *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Product Title *</label>
                       <input
                         type="text"
                         name="name"
@@ -1482,14 +1793,14 @@ export default function AdminPage() {
                         onChange={handleChange}
                         required
                         placeholder="Kamran Gold Edition English Willow"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Price (PKR) *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Price (PKR) *</label>
                       <input
                         type="number"
                         name="price"
@@ -1497,16 +1808,16 @@ export default function AdminPage() {
                         onChange={handleChange}
                         required
                         placeholder="25000"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm font-mono focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm font-mono transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Category *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Category *</label>
                       <select
                         name="category"
                         value={formData.category}
                         onChange={handleChange}
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       >
                         {MAIN_CATEGORIES.map((cat) => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -1514,12 +1825,12 @@ export default function AdminPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Subcategory *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Subcategory *</label>
                       <select
                         name="subCategory"
                         value={formData.subCategory}
                         onChange={handleChange}
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       >
                         {CATEGORY_MAP[formData.category]?.map((sub) => (
                           <option key={sub} value={sub}>{sub}</option>
@@ -1529,26 +1840,26 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Brand</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Brand</label>
                     <input
                       type="text"
                       name="brand"
                       value={formData.brand}
                       onChange={handleChange}
                       placeholder="Kamran Sports"
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Description</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Description</label>
                     <textarea
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
                       rows="4"
                       placeholder="Enter specifications..."
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                     />
                   </div>
 
@@ -1566,7 +1877,7 @@ export default function AdminPage() {
 
                 <div className="lg:col-span-4 space-y-6">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Image Upload</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Image Upload</label>
                     <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                       {imagePreview ? (
@@ -1603,8 +1914,8 @@ export default function AdminPage() {
 
         {/* TAB 4: MANAGE PRODUCTS */}
         {activeTab === 'manage' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex flex-col sm:flex-row gap-4">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex flex-col sm:flex-row gap-4">
               <input
                 type="text"
                 value={searchQuery}
@@ -1624,7 +1935,7 @@ export default function AdminPage() {
               </select>
             </div>
 
-            <div className="divide-y divide-[#F0EDE4]">
+            <div className="divide-y divide-[#F0EDE4]/80">
               {filteredProducts.map((p) => (
                 <div key={p._id} className="p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -1662,7 +1973,7 @@ export default function AdminPage() {
 
         {/* TAB 5: ADD / EDIT STAR */}
         {activeTab === 'add-star' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8">
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">
                 {editingStarId ? 'Edit Star Details' : 'Add New Player / Star'}
@@ -1679,7 +1990,7 @@ export default function AdminPage() {
                 <div className="lg:col-span-8 space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Player Name *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Name *</label>
                       <input
                         type="text"
                         name="name"
@@ -1687,11 +1998,11 @@ export default function AdminPage() {
                         onChange={handleStarChange}
                         required
                         placeholder="e.g. Babar Azam"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">City *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">City *</label>
                       <input
                         type="text"
                         name="city"
@@ -1699,14 +2010,14 @@ export default function AdminPage() {
                         onChange={handleStarChange}
                         required
                         placeholder="e.g. LAHORE"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Player Role / Tag *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Role / Tag *</label>
                       <input
                         type="text"
                         name="role"
@@ -1714,16 +2025,16 @@ export default function AdminPage() {
                         onChange={handleStarChange}
                         required
                         placeholder="e.g. HARDBALL KING / TOP BATSMAN"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Category *</label>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Category *</label>
                       <select
                         name="category"
                         value={starFormData.category}
                         onChange={handleStarChange}
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-lg text-sm focus:outline-none focus:border-[#C79A44]"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
                       >
                         <option value="Tapeball">Tapeball Star</option>
                         <option value="Hardball Star">Hardball Star</option>
@@ -1734,7 +2045,7 @@ export default function AdminPage() {
 
                 <div className="lg:col-span-4 space-y-6">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Player Image</label>
+                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Image</label>
                     <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                       {imagePreview ? (
@@ -1771,8 +2082,8 @@ export default function AdminPage() {
 
         {/* TAB 6: MANAGE STARS */}
         {activeTab === 'manage-stars' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">All Registered Stars</h2>
               <select
                 value={starCategoryFilter}
@@ -1785,7 +2096,7 @@ export default function AdminPage() {
               </select>
             </div>
 
-            <div className="divide-y divide-[#F0EDE4]">
+            <div className="divide-y divide-[#F0EDE4]/80">
               {filteredStars.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 text-sm">No stars added yet.</div>
               ) : (
@@ -1830,13 +2141,13 @@ export default function AdminPage() {
 
         {/* TAB 7: ADD WILLOW IMAGE */}
         {activeTab === 'add-willow' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm p-8 max-w-xl">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8 max-w-xl">
             <h2 className="font-bold text-sm uppercase text-[#0B120D] mb-6 pb-4 border-b border-[#E8E4D9]">
               Add Willow Image
             </h2>
             <form onSubmit={handleWillowSubmit} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-[#0B120D] uppercase mb-2">Willow Wood Photo</label>
+                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Willow Wood Photo</label>
                 <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                   {imagePreview ? (
@@ -1864,8 +2175,8 @@ export default function AdminPage() {
 
         {/* TAB 8: MANAGE WILLOW GALLERY */}
         {activeTab === 'manage-willow' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9]">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">Willow Gallery ({willowImages.length})</h2>
             </div>
             {willowImages.length === 0 ? (
@@ -1890,31 +2201,50 @@ export default function AdminPage() {
 
         {/* TAB 9: DELIVERY REQUESTS */}
         {activeTab === 'delivery-requests' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex flex-wrap justify-between items-center gap-4">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">Delivery Requests ({filteredDeliveryRequests.length})</h2>
-              <select
-                value={deliveryStatusFilter}
-                onChange={(e) => setDeliveryStatusFilter(e.target.value)}
-                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
-              >
-                <option value="All">All Requests</option>
-                <option value="pending">Pending</option>
-                <option value="dispatched">Dispatched</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              
+              <div className="flex items-center gap-3">
+                <select
+                  value={deliverySourceFilter}
+                  onChange={(e) => setDeliverySourceFilter(e.target.value)}
+                  className="bg-white border border-[#E0DCD1] px-3 py-2 rounded-lg text-xs font-bold focus:outline-none"
+                >
+                  <option value="All">All Sources</option>
+                  <option value="online">Online Web</option>
+                  <option value="offline">Offline Counter</option>
+                </select>
+
+                <select
+                  value={deliveryStatusFilter}
+                  onChange={(e) => setDeliveryStatusFilter(e.target.value)}
+                  className="bg-white border border-[#E0DCD1] px-3 py-2 rounded-lg text-xs font-bold focus:outline-none"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="dispatched">Dispatched</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
             </div>
 
-            <div className="divide-y divide-[#F0EDE4]">
+            <div className="divide-y divide-[#F0EDE4]/80">
               {filteredDeliveryRequests.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">No delivery requests yet.</div>
+                <div className="p-8 text-center text-gray-500 text-sm">No delivery requests found.</div>
               ) : (
                 filteredDeliveryRequests.map((r) => {
                   const status = r.status || 'pending';
+                  const source = r.orderSource || 'online';
                   return (
                     <div key={r._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                            source === 'offline' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {source}
+                          </span>
                           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                             status === 'pending' ? 'bg-orange-100 text-orange-700' :
                             status === 'dispatched' ? 'bg-emerald-100 text-emerald-700' :
@@ -1922,11 +2252,11 @@ export default function AdminPage() {
                           }`}>
                             {status}
                           </span>
-                          {r.product && (
-                            <span className="text-[10px] font-mono font-bold text-[#A6362B]">{r.product}</span>
+                          {(r.product || r.productName) && (
+                            <span className="text-[10px] font-mono text-[#A6362B] font-bold">{r.product || r.productName}</span>
                           )}
                         </div>
-                        <h3 className="font-bold text-sm text-[#0B120D]">{r.name} — {r.phone}</h3>
+                        <h3 className="font-bold text-sm text-[#0B120D]">{r.name || r.customerName} — {r.phone || r.phoneNumber}</h3>
                         <p className="text-xs text-neutral-500 mt-1">{r.address}, {r.city}</p>
                         {r.notes && <p className="text-xs text-neutral-400 mt-1 italic">"{r.notes}"</p>}
                       </div>
@@ -1941,7 +2271,7 @@ export default function AdminPage() {
                         {status !== 'dispatched' && (
                           <button
                             onClick={() => handleMarkDispatched(r._id, 'dispatched')}
-                            className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                            className="bg-[#0B120D] hover:bg-[#C79A44] text-[#fff] text-xs font-bold px-3 py-1.5 rounded transition"
                           >
                             Mark Dispatched
                           </button>
@@ -1963,8 +2293,8 @@ export default function AdminPage() {
 
         {/* TAB 10: REVIEWS */}
         {activeTab === 'reviews' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9] shadow-sm overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7] border-b border-[#E8E4D9] flex justify-between items-center">
+          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
+            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
               <h2 className="font-bold text-sm uppercase text-[#0B120D]">Customer Reviews ({filteredReviews.length})</h2>
               <select
                 value={reviewStatusFilter}
@@ -1977,7 +2307,7 @@ export default function AdminPage() {
               </select>
             </div>
 
-            <div className="divide-y divide-[#F0EDE4]">
+            <div className="divide-y divide-[#F0EDE4]/80">
               {filteredReviews.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 text-sm">No reviews yet.</div>
               ) : (
@@ -2026,6 +2356,142 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+      </div>
+
+      {/* MANUAL OFFLINE ORDER MODAL */}
+      {isManualModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-[#E8E4D9]/80 shadow-2xl">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#E8E4D9]">
+              <h3 className="font-bold text-sm text-[#0B120D] uppercase flex items-center gap-2">
+                <Icon path={ICONS.store} className="w-4 h-4 text-[#C79A44]" />
+                <span>Record Manual Offline Counter Order</span>
+              </h3>
+              <button onClick={() => setIsManualModalOpen(false)}>
+                <Icon path={ICONS.close} className="w-5 h-5 text-neutral-400 hover:text-black" />
+              </button>
+            </div>
+
+            <form onSubmit={handleManualOrderSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Customer Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={manualFormData.name}
+                  onChange={handleManualChange}
+                  required
+                  placeholder="e.g. Walk-in Customer / Ahmad"
+                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Phone Number *</label>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={manualFormData.phone}
+                    onChange={handleManualChange}
+                    required
+                    placeholder="03001234567"
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">City</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={manualFormData.city}
+                    onChange={handleManualChange}
+                    placeholder="Lahore / Counter"
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Product Name *</label>
+                <select
+                  name="product"
+                  value={manualFormData.product}
+                  onChange={(e) => {
+                    handleManualChange(e);
+                    const pr = getProductPrice(e.target.value);
+                    if (pr) setManualFormData((prev) => ({ ...prev, amount: pr }));
+                  }}
+                  required
+                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                >
+                  <option value="">Select Product from Stock</option>
+                  {products.map((p) => (
+                    <option key={p._id} value={p.name || p.title}>{p.name || p.title} (PKR {p.price})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Total Amount (PKR) *</label>
+                  <input
+                    type="number"
+                    name="amount"
+                    value={manualFormData.amount}
+                    onChange={handleManualChange}
+                    required
+                    placeholder="15000"
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm font-mono transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Payment Method</label>
+                  <select
+                    name="paymentMethod"
+                    value={manualFormData.paymentMethod}
+                    onChange={handleManualChange}
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Notes / Remarks</label>
+                <input
+                  type="text"
+                  name="notes"
+                  value={manualFormData.notes}
+                  onChange={handleManualChange}
+                  placeholder="Counter discount or special note..."
+                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsManualModalOpen(false)}
+                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold px-4 py-2.5 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow-sm"
+                >
+                  {loading ? 'Saving Order...' : 'Save Manual Order'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
