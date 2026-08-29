@@ -109,11 +109,13 @@ const ICONS = {
   close: "M6 18L18 6M6 6l12 12",
   package: "M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z",
   star: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385c.116.488-.41.868-.834.613l-4.71-2.834a.563.563 0 00-.582 0l-4.71 2.834c-.423.255-.95-.125-.834-.613l1.285-5.385a.563.563 0 00-.182-.557l-4.204-3.602c-.38-.325-.178-.948.32-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z",
-  image: "M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+  image: "M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z",
+  chart: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z",
+  download: "M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
 };
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState('manage');
+  const [activeTab, setActiveTab] = useState('sales');
   const [products, setProducts] = useState([]);
   const [stars, setStars] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
@@ -704,6 +706,144 @@ export default function AdminPage() {
     }
   };
 
+  // --- SALES ANALYTICS COMPUTATIONS ---
+  const getProductPrice = (reqProduct) => {
+    if (!reqProduct) return 0;
+    const found = products.find(
+      (p) => (p.name || p.title || '').toLowerCase() === reqProduct.toLowerCase() || p.productId === reqProduct
+    );
+    return found ? Number(found.price) || 0 : 5000;
+  };
+
+  const totalSalesRevenue = deliveryRequests.reduce((sum, req) => {
+    const price = req.price || req.amount || getProductPrice(req.product);
+    return sum + price;
+  }, 0);
+
+  const dispatchedRevenue = deliveryRequests
+    .filter((req) => (req.status || 'pending') === 'dispatched')
+    .reduce((sum, req) => sum + (req.price || req.amount || getProductPrice(req.product)), 0);
+
+  const pendingRevenue = deliveryRequests
+    .filter((req) => (req.status || 'pending') === 'pending')
+    .reduce((sum, req) => sum + (req.price || req.amount || getProductPrice(req.product)), 0);
+
+  const avgOrderValue = deliveryRequests.length > 0 ? Math.round(totalSalesRevenue / deliveryRequests.length) : 0;
+
+  // Top Selling Items Aggregation
+  const itemSalesCount = {};
+  deliveryRequests.forEach((req) => {
+    const item = req.product || 'Standard Product';
+    itemSalesCount[item] = (itemSalesCount[item] || 0) + 1;
+  });
+  const topSellingItems = Object.entries(itemSalesCount)
+    .map(([name, count]) => ({ name, count, revenue: count * getProductPrice(name) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // --- PDF EXPORT GENERATOR ---
+  const handleDownloadPDF = () => {
+    const printWindow = window.open('', '_blank');
+    const dateStr = new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Sales & Revenue Report - Kamran Sports</title>
+          <style>
+            body { font-family: sans-serif; padding: 30px; color: #1a1a1a; }
+            .header { border-bottom: 3px solid #A6362B; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+            .title { font-size: 22px; font-weight: bold; color: #0B120D; text-transform: uppercase; }
+            .subtitle { font-size: 12px; color: #A6362B; font-weight: bold; }
+            .date { text-align: right; font-size: 12px; color: #666; }
+            .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+            .kpi-card { background: #FAFAF7; border: 1px solid #E8E4D9; padding: 15px; border-radius: 8px; }
+            .kpi-title { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 5px; }
+            .kpi-value { font-size: 18px; font-weight: bold; color: #0B120D; font-family: monospace; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            th { background: #0B120D; color: #fff; padding: 10px; text-align: left; text-transform: uppercase; font-size: 10px; }
+            td { padding: 10px; border-bottom: 1px solid #E8E4D9; }
+            tr:nth-child(even) { background: #FAFAF7; }
+            .status { font-weight: bold; text-transform: uppercase; font-size: 10px; padding: 3px 6px; border-radius: 4px; }
+            .dispatched { background: #d1fae5; color: #047857; }
+            .pending { background: #ffedd5; color: #c2410c; }
+            .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">Kamran Sports</div>
+              <div class="subtitle">Official Sales & Revenue Analytics Report</div>
+            </div>
+            <div class="date">
+              Report Generated:<br><strong>${dateStr}</strong>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-title">Total Revenue</div>
+              <div class="kpi-value">PKR ${totalSalesRevenue.toLocaleString()}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Dispatched Revenue</div>
+              <div class="kpi-value">PKR ${dispatchedRevenue.toLocaleString()}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Total Orders</div>
+              <div class="kpi-value">${deliveryRequests.length}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Avg Order Value</div>
+              <div class="kpi-value">PKR ${avgOrderValue.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <h3 style="font-size: 14px; text-transform: uppercase; margin-bottom: 10px; color: #0B120D;">Order Details & Delivery Requests</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Product</th>
+                <th>Status</th>
+                <th>Est. Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${deliveryRequests.map(r => `
+                <tr>
+                  <td><strong>${r.name}</strong></td>
+                  <td>${r.phone}</td>
+                  <td>${r.city || 'N/A'}</td>
+                  <td>${r.product || 'Standard Product'}</td>
+                  <td><span class="status ${r.status === 'dispatched' ? 'dispatched' : 'pending'}">${r.status || 'pending'}</span></td>
+                  <td style="font-family: monospace;">PKR ${getProductPrice(r.product).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Generated automatically by Kamran Sports Admin Panel Dashboard System.
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   const filteredDeliveryRequests = deliveryRequests.filter((r) =>
     deliveryStatusFilter === 'All' ? true : (r.status || 'pending') === deliveryStatusFilter
   );
@@ -747,7 +887,7 @@ export default function AdminPage() {
                 Kamran Sports
               </h1>
               <p className="text-[11px] font-medium text-[#A6362B] tracking-[0.2em] uppercase">
-                Inventory, Stars & Hero Admin
+                Inventory, Sales & Admin Portal
               </p>
             </div>
           </div>
@@ -865,6 +1005,17 @@ export default function AdminPage() {
 
         {/* Tab Switcher */}
         <div className="bg-[#F4F1EA] border border-[#E8E4D9] p-1.5 rounded-xl mb-8 flex flex-wrap gap-2">
+          {/* Sales Tab */}
+          <button
+            onClick={() => switchTab('sales')}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${
+              activeTab === 'sales' ? 'bg-[#A6362B] text-white shadow-sm' : 'text-neutral-500 hover:text-[#0B120D]'
+            }`}
+          >
+            <Icon path={ICONS.chart} className="w-4 h-4" />
+            <span>Sales & Analytics</span>
+          </button>
+
           {/* Hero Section Tabs */}
           <button
             onClick={() => switchTab('manage-hero')}
@@ -983,6 +1134,139 @@ export default function AdminPage() {
             <span>Reviews {pendingReviewCount > 0 && `(${pendingReviewCount})`}</span>
           </button>
         </div>
+
+        {/* TAB 0: SALES & REVENUE DASHBOARD */}
+        {activeTab === 'sales' && (
+          <div className="space-y-8">
+            {/* Header Action Bar */}
+            <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="font-bold text-lg text-[#0B120D] uppercase tracking-wide">
+                  Sales & Revenue Dashboard
+                </h2>
+                <p className="text-xs text-neutral-500">Real-time revenue analytics & order metrics overview</p>
+              </div>
+
+              <button
+                onClick={handleDownloadPDF}
+                className="bg-[#0B120D] hover:bg-[#A6362B] text-white text-xs font-bold px-5 py-3 rounded-xl transition flex items-center gap-2 shadow-sm"
+              >
+                <Icon path={ICONS.download} className="w-4 h-4 text-[#C79A44]" />
+                <span>Download PDF Sales Report</span>
+              </button>
+            </div>
+
+            {/* Main KPI Revenue Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
+                <p className="text-xs font-bold uppercase text-neutral-400 mb-1">Total Gross Revenue</p>
+                <h3 className="text-2xl font-bold font-mono text-[#0B120D]">PKR {totalSalesRevenue.toLocaleString()}</h3>
+                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded mt-2 inline-block">
+                  Calculated across all orders
+                </span>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
+                <p className="text-xs font-bold uppercase text-emerald-600 mb-1">Completed / Dispatched Revenue</p>
+                <h3 className="text-2xl font-bold font-mono text-emerald-700">PKR {dispatchedRevenue.toLocaleString()}</h3>
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded mt-2 inline-block">
+                  {deliveryRequests.filter((r) => r.status === 'dispatched').length} Orders Dispatched
+                </span>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
+                <p className="text-xs font-bold uppercase text-orange-600 mb-1">Pending Orders Value</p>
+                <h3 className="text-2xl font-bold font-mono text-orange-700">PKR {pendingRevenue.toLocaleString()}</h3>
+                <span className="text-[10px] text-orange-700 font-bold bg-orange-100 px-2 py-0.5 rounded mt-2 inline-block">
+                  {pendingDeliveryCount} Pending Processing
+                </span>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
+                <p className="text-xs font-bold uppercase text-[#C79A44] mb-1">Average Order Value (AOV)</p>
+                <h3 className="text-2xl font-bold font-mono text-[#0B120D]">PKR {avgOrderValue.toLocaleString()}</h3>
+                <span className="text-[10px] text-[#C79A44] font-bold bg-[#FDF8EE] px-2 py-0.5 rounded mt-2 inline-block">
+                  Per Order Average
+                </span>
+              </div>
+            </div>
+
+            {/* Charts & Breakdown Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Order Status Breakdown Bars */}
+              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
+                <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Order Status Breakdown</h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="text-emerald-700 uppercase">Dispatched Orders</span>
+                      <span>
+                        {deliveryRequests.length > 0
+                          ? Math.round((deliveryRequests.filter((r) => r.status === 'dispatched').length / deliveryRequests.length) * 100)
+                          : 0}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
+                      <div
+                        className="bg-emerald-600 h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${
+                            deliveryRequests.length > 0
+                              ? (deliveryRequests.filter((r) => r.status === 'dispatched').length / deliveryRequests.length) * 100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="text-orange-600 uppercase">Pending Requests</span>
+                      <span>
+                        {deliveryRequests.length > 0
+                          ? Math.round((pendingDeliveryCount / deliveryRequests.length) * 100)
+                          : 0}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
+                      <div
+                        className="bg-orange-500 h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${
+                            deliveryRequests.length > 0 ? (pendingDeliveryCount / deliveryRequests.length) * 100 : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Selling Products List */}
+              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9] shadow-sm">
+                <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Top Selling Items Breakdown</h3>
+                {topSellingItems.length === 0 ? (
+                  <p className="text-xs text-neutral-400 italic">No sales data recorded yet.</p>
+                ) : (
+                  <div className="divide-y divide-[#F0EDE4]">
+                    {topSellingItems.map((item, idx) => (
+                      <div key={idx} className="py-2.5 flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-xs text-[#0B120D]">{item.name}</p>
+                          <p className="text-[10px] text-neutral-400">{item.count} total orders</p>
+                        </div>
+                        <span className="font-mono text-xs font-bold text-[#A6362B]">
+                          PKR {item.revenue.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: ADD / EDIT HERO SLIDE */}
         {activeTab === 'add-hero' && (
