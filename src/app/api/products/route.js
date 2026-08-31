@@ -2,37 +2,67 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Product from '@/models/Product';
 
-// GET: Fetch products with optional filtering
+// Prevent Next.js from caching GET requests statically
+export const dynamic = 'force-dynamic';
+
+// GET: Fetch products with flexible filtering
 export async function GET(request) {
   try {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
-    const subCategory = searchParams.get('subCategory');
+    
+    // Support all variations of subcategory parameters
+    const subCategory =
+      searchParams.get('subCategory') ||
+      searchParams.get('subcategory') ||
+      searchParams.get('sub');
+      
     const search = searchParams.get('search');
 
     const query = {};
 
+    // Flexible Category Search (handles hyphens and case mismatch)
     if (category && category !== 'All') {
-      query.category = category;
+      const cleanCategory = category.replace(/-/g, ' ');
+      query.category = { $regex: new RegExp(`^${cleanCategory}$`, 'i') };
     }
 
+    // Flexible SubCategory Search (checks both subCategory & subcategory DB fields)
     if (subCategory && subCategory !== 'All') {
-      query.subCategory = subCategory;
+      const cleanSubCategory = subCategory.replace(/-/g, ' ');
+      const subRegex = new RegExp(`^${cleanSubCategory}$`, 'i');
+      
+      query.$or = [
+        { subCategory: subRegex },
+        { subcategory: subRegex }
+      ];
     }
 
+    // Keyword Search
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { title: { $regex: search, $options: 'i' } },
-        { productId: { $regex: search, $options: 'i' } },
+      const searchRegex = { $regex: search, $options: 'i' };
+      const searchConditions = [
+        { name: searchRegex },
+        { title: searchRegex },
+        { productId: searchRegex },
       ];
+
+      if (query.$or) {
+        // Combine subCategory $or and search $or safely
+        query.$and = [
+          { $or: query.$or },
+          { $or: searchConditions }
+        ];
+        delete query.$or;
+      } else {
+        query.$or = searchConditions;
+      }
     }
 
     const products = await Product.find(query).sort({ createdAt: -1 });
 
-    // Format matches admin panel expectation: data.success and data.data
     return NextResponse.json({ success: true, data: products }, { status: 200 });
   } catch (error) {
     console.error('>>> DB FETCH ERROR:', error);

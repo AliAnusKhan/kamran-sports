@@ -19,6 +19,9 @@ const ProductSchema = new mongoose.Schema(
       type: String, 
       required: true 
     },
+    subCategory: { type: String, default: '' },
+    subcategory: { type: String, default: '' },
+    title: { type: String, default: '' },
     batType: { type: String, default: '' },
     ballType: { type: String, default: '' },
     gloveType: { type: String, default: '' },

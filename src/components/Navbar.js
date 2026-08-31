@@ -106,7 +106,7 @@ const CATEGORY_TREE = [
           { name: 'English Willow', value: 'English Willow' },
           { name: 'Kashmir Willow', value: 'Kashmir Willow' },
           { name: 'Tennis Bat', value: 'Tennis Bat' },
-          { name: 'My First Kit', value: 'My First Kit' },
+          { name: 'Bat Grips', value: 'Bat Grips' },
           { name: 'Cricket Kit', value: 'Cricket Kit' },
         ],
       },
@@ -131,6 +131,7 @@ const CATEGORY_TREE = [
         title: 'Gloves',
         items: [
           { name: 'Batting Gloves', value: 'Batting Gloves' },
+          { name: 'Tapeball Batting Gloves', value: 'Tapeball Batting Gloves' },
           { name: 'W.K. Gloves', value: 'W.K. Gloves' },
           { name: 'Inner Gloves', value: 'Inner Gloves' },
         ],
@@ -188,28 +189,20 @@ const CATEGORY_TREE = [
     dropdownWidth: 'w-[400px]',
     sections: [
       {
-        title: 'Cricket & Field Caps',
+        title: 'Caps',
         items: [
-          { name: 'Cricket Caps', value: 'Cricket Caps' },
-          { name: 'Sun Hats & Floppy', value: 'Sun Hats' },
-          { name: 'Training Caps', value: 'Training Caps' },
-        ],
-      },
-      {
-        title: 'Casual Headwear',
-        items: [
-          { name: 'Baseball Caps', value: 'Baseball Caps' },
-          { name: 'Sports Visors', value: 'Visors' },
+          { name: 'Fixed Cap', value: 'Fixed Cap' },
+          { name: 'Adjustable Cap', value: 'Adjustable Cap' },
         ],
       },
     ],
   },
   {
-    name: 'Football',
-    value: 'Football',
+    name: 'Football & Multiple Balls',
+    value: 'Football & Multiple Balls',
     isMegaMenu: true,
-    gridCols: 'grid-cols-2',
-    dropdownWidth: 'w-[420px]',
+    gridCols: 'grid-cols-3',
+    dropdownWidth: 'w-[600px]',
     sections: [
       {
         title: 'Footballs',
@@ -225,6 +218,15 @@ const CATEGORY_TREE = [
           { name: 'Shin Guards', value: 'Shin Guards' },
           { name: 'Goalkeeper Gloves', value: 'Goalkeeper Gloves' },
           { name: 'Football Socks', value: 'Football Socks' },
+        ],
+      },
+      {
+        title: 'Other Balls',
+        items: [
+          { name: 'Basketball', value: 'Basketball' },
+          { name: 'Volleyball', value: 'Volleyball' },
+          { name: 'Throwball', value: 'Throwball' },
+          { name: 'Rugby Ball', value: 'Rugby Ball' },
         ],
       },
     ],
@@ -259,8 +261,8 @@ const CATEGORY_TREE = [
     name: 'Indoor Games',
     value: 'Indoor Games',
     isMegaMenu: true,
-    gridCols: 'grid-cols-2',
-    dropdownWidth: 'w-[460px]',
+    gridCols: 'grid-cols-3',
+    dropdownWidth: 'w-[620px]',
     sections: [
       {
         title: 'Board & Family Games',
@@ -279,23 +281,43 @@ const CATEGORY_TREE = [
           { name: 'Dart Boards', value: 'Dart Boards' },
         ],
       },
+      {
+        title: 'Badminton & Racket',
+        items: [
+          { name: 'Shuttle Cock', value: 'Shuttle Cock' },
+          { name: 'Table Tennis', value: 'Table Tennis Set' },
+          { name: 'Rackets & Balls', value: 'Rackets & Balls' },
+          { name: 'Tennis Racket', value: 'Tennis Racket' },
+          { name: 'Tennis Ball', value: 'Tennis Ball' },
+          { name: 'Padel Racket', value: 'Padel Racket' },
+          { name: 'Foosball', value: 'Foosball' },
+        ],
+      },
     ],
   },
   {
-    name: 'Bat Repair',
-    value: 'Bat Repair',
+    name: 'Trophies & Medals',
+    value: 'Trophies & Medals',
     isMegaMenu: true,
-    isSpecial: true,
-    gridCols: 'grid-cols-1',
-    dropdownWidth: 'w-[250px]',
+    gridCols: 'grid-cols-2',
+    dropdownWidth: 'w-[420px]',
     sections: [
       {
-        title: 'Repair Services',
+        title: 'Trophies',
         items: [
-          { name: 'Grip Replacement', value: 'Grip Replacement' },
-          { name: 'Toe Guard Repair', value: 'Toe Guard Repair' },
-          { name: 'Refurbishment', value: 'Refurbishment' },
-          { name: 'Thread Binding', value: 'Thread Binding' },
+          { name: 'Plastic Trophies', value: 'Plastic Trophies' },
+          { name: 'Metal Trophies', value: 'Metal Trophies' },
+          { name: 'Imported Trophies', value: 'Imported Trophies' },
+          { name: 'Autograph Bat', value: 'Autograph Bat' },
+        ],
+      },
+      {
+        title: 'Medals',
+        items: [
+          { name: 'Shield', value: 'Shield' },
+          { name: 'Plastic Shield', value: 'Plastic Shield' },
+          { name: 'Ready Made', value: 'Ready Made' },
+          { name: 'Customize', value: 'Customize' },
         ],
       },
     ],
@@ -372,7 +394,7 @@ export default function Navbar({
       setBallTypeFilter(['Leather Ball', 'Tennis Ball'].includes(subValue) ? subValue : 'All');
     }
     if (typeof setGloveTypeFilter === 'function') {
-      setGloveTypeFilter(['Batting Gloves', 'W.K. Gloves', 'Inner Gloves'].includes(subValue) ? subValue : 'All');
+      setGloveTypeFilter(['Batting Gloves', 'Tapeball Batting Gloves', 'W.K. Gloves', 'Inner Gloves'].includes(subValue) ? subValue : 'All');
     }
 
     setMobileMenuOpen(false);

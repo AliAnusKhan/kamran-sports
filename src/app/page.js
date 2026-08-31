@@ -519,7 +519,7 @@ function HomeContent() {
 
   const filteredProducts = products.filter((p) => {
     const pCat = (p.category || '').toLowerCase().trim();
-    const pSub = (p.subCategory || p.type || '').toLowerCase().trim();
+    const pSub = (p.subCategory || p.subcategory || p.type || '').toLowerCase().trim();
     const pTitle = (p.name || p.title || '').toLowerCase().trim();
     const pDesc = (p.description || '').toLowerCase().trim();
     const fullText = `${pCat} ${pSub} ${pTitle} ${pDesc}`;
@@ -538,6 +538,15 @@ function HomeContent() {
     }
     if (activeCategory === 'Gloves' && gloveTypeFilter !== 'All') {
       if (!fullText.includes(gloveTypeFilter.toLowerCase())) return false;
+    }
+
+    // Exact subCategory match FIRST — e.g. "Tennis Bat", "English Willow", "Kashmir Willow".
+    // This MUST run before the generic keyword buckets below, otherwise a subCategory like
+    // "Tennis Bat" gets swallowed by the broad "bat" keyword bucket (mixed with English/Kashmir
+    // Willow), or dropped entirely if the literal word "bat"/"willow" isn't present anywhere
+    // else in the product's category/title/description text.
+    if (pSub && (pSub === activeCat || pSub.includes(activeCat) || activeCat.includes(pSub))) {
+      return true;
     }
 
     if (activeCat.includes('cap') || activeCat.includes('hat')) {

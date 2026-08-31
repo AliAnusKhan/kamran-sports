@@ -12,20 +12,64 @@ const FALLBACK_IMG =
     </svg>`
   );
 
+// NOTE: These categories & subcategory VALUES are kept in exact sync with
+// Navbar.js's CATEGORY_TREE. Whatever value a customer clicks on the storefront
+// (e.g. "Cricket Store" -> "Tennis Bat") must be saved here with the SAME exact
+// spelling/casing, otherwise the storefront filter (which matches on this exact
+// text) will not find the product. If you ever add/rename an item in Navbar.js,
+// update it here too.
 const CATEGORY_MAP = {
   'Cricket Store': [
-    'English Willow', 'Kashmir Willow', 'Tennis Bat', 'My First Kit', 'Cricket Kit',
-    'Leather Ball', 'Tennis Ball', 'Trolley', 'Wheelie Kit', 'Wheelie Duffle',
-    'Kit', 'Duffle', 'Batting Gloves', 'W.K. Gloves', 'Inner Gloves',
-    'Batting Leg Guard', 'Wicket Keeping Leg Guard', 'Elbow Guard', 'Chest Guard',
-    'Thigh Pad', 'Inner Thigh Pad', 'Abdo Guard', 'Helmets',
+    // Bats
+    'English Willow', 'Kashmir Willow', 'Tennis Bat', 'Bat Grips', 'Cricket Kit',
+    // Balls
+    'Leather Ball', 'Tennis Ball',
+    // Cricket Bags
+    'Trolley', 'Wheelie Kit', 'Wheelie Duffle', 'Kit', 'Duffle',
+    // Gloves
+    'Batting Gloves', 'Tapeball Batting Gloves', 'W.K. Gloves', 'Inner Gloves',
+    // Leg Guards
+    'Batting Leg Guard', 'Wicket Keeping Leg Guard',
+    // Protective Gear
+    'Elbow Guard', 'Chest Guard', 'Thigh Pad', 'Inner Thigh Pad', 'Abdo Guard', 'Helmets',
   ],
-  'Shoes': ['Spike Shoes', 'Rubber Studs', 'Turf Shoes', 'Running Shoes', 'Training Shoes', 'Indoor Shoes'],
-  'Caps': ['Cricket Caps', 'Sun Hats', 'Training Caps', 'Baseball Caps', 'Visors'],
-  'Football': ['Match Footballs', 'Training Footballs', 'Futsal Balls', 'Shin Guards', 'Goalkeeper Gloves', 'Football Socks'],
-  'Shirt & Trouser': ['Cricket Whites', 'T20 Jerseys', 'Team Shirts', 'Track Trousers', 'Polo Shirts', 'Jackets', 'Compression Wear'],
-  'Indoor Games': ['Chess', 'Ludo', 'Cards', 'UNO', 'Carrom', 'Table Tennis', 'Dart Boards'],
-  'Bat Repair': ['Grip Replacement', 'Toe Guard Repair', 'Refurbishment', 'Thread Binding'],
+  'Shoes': [
+    // Cricket Shoes
+    'Spike Shoes', 'Rubber Studs', 'Turf Shoes',
+    // Sports & Training
+    'Running Shoes', 'Training Shoes', 'Indoor Shoes',
+  ],
+  'Caps': [
+    'Fixed Cap', 'Adjustable Cap',
+  ],
+  'Football & Multiple Balls': [
+    // Footballs
+    'Match Footballs', 'Training Footballs', 'Futsal Balls',
+    // Gear & Accessories
+    'Shin Guards', 'Goalkeeper Gloves', 'Football Socks',
+    // Other Balls
+    'Basketball', 'Volleyball', 'Throwball', 'Rugby Ball',
+  ],
+  'Shirt & Trouser': [
+    // Cricket Kits & Whites
+    'Cricket Whites', 'T20 Jerseys', 'Team Shirts',
+    // Apparel & Training
+    'Track Trousers', 'Polo Shirts', 'Jackets', 'Compression Wear',
+  ],
+  'Indoor Games': [
+    // Board & Family Games
+    'Chess', 'Ludo', 'Cards', 'UNO',
+    // Table & Action Games
+    'Carrom', 'Table Tennis', 'Dart Boards',
+    // Badminton & Racket
+    'Shuttle Cock', 'Table Tennis Set', 'Rackets & Balls', 'Tennis Racket', 'Tennis Ball', 'Padel Racket', 'Foosball',
+  ],
+  'Trophies & Medals': [
+    // Trophies
+    'Plastic Trophies', 'Metal Trophies', 'Imported Trophies', 'Autograph Bat',
+    // Medals
+    'Shield', 'Plastic Shield', 'Ready Made', 'Customize',
+  ],
 };
 
 const MAIN_CATEGORIES = Object.keys(CATEGORY_MAP);
@@ -381,7 +425,7 @@ export default function AdminPage() {
         paymentMethod: manualFormData.paymentMethod,
         notes: manualFormData.notes,
         orderSource: 'offline',
-        status: 'dispatched', // Manual entries marked dispatched by default
+        status: 'dispatched',
       };
 
       const data = await safeFetch('/api/delivery-requests', {
@@ -1027,7 +1071,7 @@ export default function AdminPage() {
     'add-star': editingStarId ? 'Edit Star' : 'Add New Star',
     'manage-willow': 'Willow Gallery',
     'add-willow': 'Add Willow Image',
-    'delivery-requests': 'Delivery Requests',
+    'delivery-requests': 'Delivery Requests & Sales',
     reviews: 'Customer Reviews',
   };
 
@@ -1183,1309 +1227,1312 @@ export default function AdminPage() {
           </div>
         </header>
 
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
-        {/* STATS CARDS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
-          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-neutral-400 mb-1">Total Products</p>
-                <p className="text-3xl font-bold text-[#0B120D] font-mono">{products.length}</p>
+        <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
+          {/* STATS CARDS */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
+            <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-neutral-400 mb-1">Total Products</p>
+                  <p className="text-3xl font-bold text-[#0B120D] font-mono">{products.length}</p>
+                </div>
+                <div className="p-3 bg-[#0B120D] rounded-xl group-hover:scale-105 transition-transform">
+                  <Icon path={ICONS.inventory} className="w-5 h-5 text-[#C79A44]" />
+                </div>
               </div>
-              <div className="p-3 bg-[#0B120D] rounded-xl group-hover:scale-105 transition-transform">
-                <Icon path={ICONS.inventory} className="w-5 h-5 text-[#C79A44]" />
+            </div>
+
+            <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-emerald-600 mb-1">In Stock</p>
+                  <p className="text-3xl font-bold text-emerald-700 font-mono">{inStockCount}</p>
+                </div>
+                <div className="p-3 bg-emerald-600 rounded-xl group-hover:scale-105 transition-transform">
+                  <Icon path={ICONS.stock} className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-[#A6362B] mb-1">Out of Stock</p>
+                  <p className="text-3xl font-bold text-[#A6362B] font-mono">{outOfStockCount}</p>
+                </div>
+                <div className="p-3 bg-[#A6362B] rounded-xl group-hover:scale-105 transition-transform">
+                  <Icon path={ICONS.outOfStock} className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-[#C79A44] mb-1">Total Stars</p>
+                  <p className="text-3xl font-bold text-[#0B120D] font-mono">{stars.length}</p>
+                </div>
+                <div className="p-3 bg-[#C79A44] rounded-xl group-hover:scale-105 transition-transform">
+                  <Icon path={ICONS.star} className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-blue-600 mb-1">Hero Slides</p>
+                  <p className="text-3xl font-bold text-[#0B120D] font-mono">{heroSlides.length}</p>
+                </div>
+                <div className="p-3 bg-blue-600 rounded-xl group-hover:scale-105 transition-transform">
+                  <Icon path={ICONS.image} className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-orange-600 mb-1">Pending Deliveries</p>
+                  <p className="text-3xl font-bold text-orange-700 font-mono">{pendingDeliveryCount}</p>
+                </div>
+                <div className="p-3 bg-orange-600 rounded-xl group-hover:scale-105 transition-transform">
+                  <Icon path={ICONS.package} className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-purple-600 mb-1">Pending Reviews</p>
+                  <p className="text-3xl font-bold text-purple-700 font-mono">{pendingReviewCount}</p>
+                </div>
+                <div className="p-3 bg-purple-600 rounded-xl group-hover:scale-105 transition-transform">
+                  <Icon path={ICONS.star} className="w-5 h-5 text-white" />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-emerald-600 mb-1">In Stock</p>
-                <p className="text-3xl font-bold text-emerald-700 font-mono">{inStockCount}</p>
-              </div>
-              <div className="p-3 bg-emerald-600 rounded-xl group-hover:scale-105 transition-transform">
-                <Icon path={ICONS.stock} className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-[#A6362B] mb-1">Out of Stock</p>
-                <p className="text-3xl font-bold text-[#A6362B] font-mono">{outOfStockCount}</p>
-              </div>
-              <div className="p-3 bg-[#A6362B] rounded-xl group-hover:scale-105 transition-transform">
-                <Icon path={ICONS.outOfStock} className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-[#C79A44] mb-1">Total Stars</p>
-                <p className="text-3xl font-bold text-[#0B120D] font-mono">{stars.length}</p>
-              </div>
-              <div className="p-3 bg-[#C79A44] rounded-xl group-hover:scale-105 transition-transform">
-                <Icon path={ICONS.star} className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-blue-600 mb-1">Hero Slides</p>
-                <p className="text-3xl font-bold text-[#0B120D] font-mono">{heroSlides.length}</p>
-              </div>
-              <div className="p-3 bg-blue-600 rounded-xl group-hover:scale-105 transition-transform">
-                <Icon path={ICONS.image} className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-orange-600 mb-1">Pending Deliveries</p>
-                <p className="text-3xl font-bold text-orange-700 font-mono">{pendingDeliveryCount}</p>
-              </div>
-              <div className="p-3 bg-orange-600 rounded-xl group-hover:scale-105 transition-transform">
-                <Icon path={ICONS.package} className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="group bg-white rounded-2xl border border-[#E8E4D9] p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase text-purple-600 mb-1">Pending Reviews</p>
-                <p className="text-3xl font-bold text-purple-700 font-mono">{pendingReviewCount}</p>
-              </div>
-              <div className="p-3 bg-purple-600 rounded-xl group-hover:scale-105 transition-transform">
-                <Icon path={ICONS.star} className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {message.text && (
-          <div className={`mb-6 rounded-xl border p-4 flex items-center justify-between ${
-            message.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-[#A6362B]'
-          }`}>
-            <p className="text-sm font-semibold">{message.text}</p>
-            <button onClick={() => setMessage({ type: '', text: '' })}>
-              <Icon path={ICONS.close} className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* TAB 0: SALES & REVENUE DASHBOARD */}
-        {activeTab === 'sales' && (
-          <div className="space-y-6">
-            {/* Header Action Bar */}
-            <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
-              <div>
-                <h2 className="font-bold text-lg text-[#0B120D] tracking-wide flex items-center gap-2">
-                  <span className="w-1.5 h-6 bg-[#A6362B] rounded-full inline-block" />
-                  Sales & Revenue Dashboard
-                </h2>
-                <p className="text-xs text-neutral-500 mt-1 ml-4">Real-time revenue analytics, online/offline breakdown & order metrics</p>
-              </div>
-
-              <div className="flex items-center gap-2.5 w-full lg:w-auto">
-                <button
-                  onClick={() => setIsManualModalOpen(true)}
-                  className="flex-1 lg:flex-none bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shadow-[#C79A44]/20"
-                >
-                  <Icon path={ICONS.plus} className="w-4 h-4" />
-                  <span>Manual Order</span>
-                </button>
-                <button
-                  onClick={fetchSalesAnalytics}
-                  className="flex-1 lg:flex-none bg-white hover:bg-[#FAFAF7] text-[#0B120D] border border-[#E0DCD1] text-xs font-bold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-                >
-                  <Icon path={ICONS.chart} className="w-4 h-4 text-neutral-400" />
-                  <span>Refresh</span>
-                </button>
-                <button
-                  onClick={handleDownloadPDF}
-                  className="flex-1 lg:flex-none bg-[#0B120D] hover:bg-[#1a251c] text-white text-xs font-bold px-5 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <Icon path={ICONS.download} className="w-4 h-4 text-[#C79A44]" />
-                  <span>PDF Report</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Main KPI Revenue Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
-                <span className="absolute top-0 left-0 w-full h-1 bg-[#0B120D]" />
-                <div className="flex items-start justify-between mb-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-neutral-400">Total Gross Revenue</p>
-                  <div className="p-2 bg-[#0B120D]/5 text-[#0B120D] rounded-lg">
-                    <Icon path={ICONS.chart} className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold font-mono text-[#0B120D] tracking-tight">PKR {totalSalesRevenue.toLocaleString()}</h3>
-                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded-md mt-3 inline-block">
-                  Calculated across all orders
-                </span>
-              </div>
-
-              {/* Online Sales Metric */}
-              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
-                <span className="absolute top-0 left-0 w-full h-1 bg-blue-600" />
-                <div className="flex items-start justify-between mb-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-blue-600">Online Store Revenue</p>
-                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                    <Icon path={ICONS.globe} className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold font-mono text-blue-800 tracking-tight">PKR {onlineRevenue.toLocaleString()}</h3>
-                <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded-md mt-3 inline-block">
-                  {onlineRequests.length} Online Web Orders
-                </span>
-              </div>
-
-              {/* Offline / Manual Sales Metric */}
-              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
-                <span className="absolute top-0 left-0 w-full h-1 bg-amber-500" />
-                <div className="flex items-start justify-between mb-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">Offline Counter Revenue</p>
-                  <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
-                    <Icon path={ICONS.store} className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold font-mono text-amber-800 tracking-tight">PKR {offlineRevenue.toLocaleString()}</h3>
-                <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-1 rounded-md mt-3 inline-block">
-                  {offlineRequests.length} Manual Counter Entries
-                </span>
-              </div>
-
-              <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden hover:shadow-md transition-shadow">
-                <span className="absolute top-0 left-0 w-full h-1 bg-[#C79A44]" />
-                <div className="flex items-start justify-between mb-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#C79A44]">Average Order Value</p>
-                  <div className="p-2 bg-[#FDF8EE] text-[#C79A44] rounded-lg">
-                    <Icon path={ICONS.package} className="w-4 h-4" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold font-mono text-[#0B120D] tracking-tight">PKR {avgOrderValue.toLocaleString()}</h3>
-                <span className="text-[10px] text-[#96742f] font-bold bg-[#FDF8EE] px-2 py-1 rounded-md mt-3 inline-block">
-                  Per Order Average
-                </span>
-              </div>
-            </div>
-
-            {/* PRODUCT VS PRODUCT COMPARISON SECTION */}
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02]">
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8 pb-5 border-b border-[#E8E4D9]">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-[#A6362B]/10 text-[#A6362B] rounded-xl">
-                    <Icon path={ICONS.compare} className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm uppercase tracking-wide text-[#0B120D]">Product vs Product Comparison</h3>
-                    <p className="text-xs text-neutral-500">Compare sales volume, total revenue, and channel distribution</p>
-                  </div>
-                </div>
-
-                {/* Product Selectors */}
-                <div className="flex items-center gap-3 w-full lg:w-auto">
-                  <div className="relative flex-1 lg:flex-none lg:w-56">
-                    <select
-                      value={productA}
-                      onChange={(e) => setProductA(e.target.value)}
-                      className="w-full appearance-none bg-[#FAFAF7] border border-[#E0DCD1] text-xs font-bold pl-3 pr-9 py-2.5 rounded-xl text-[#0B120D] focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20 transition-colors"
-                    >
-                      <option value="">Select Product A</option>
-                      {products.map((p) => (
-                        <option key={p._id} value={p.name || p.title}>{p.name || p.title}</option>
-                      ))}
-                    </select>
-                    <Icon path={ICONS.chevron} className="w-3.5 h-3.5 text-neutral-400 rotate-90 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-
-                  <span className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-[#0B120D] text-[#C79A44] text-[10px] font-bold uppercase">
-                    Vs
-                  </span>
-
-                  <div className="relative flex-1 lg:flex-none lg:w-56">
-                    <select
-                      value={productB}
-                      onChange={(e) => setProductB(e.target.value)}
-                      className="w-full appearance-none bg-[#FAFAF7] border border-[#E0DCD1] text-xs font-bold pl-3 pr-9 py-2.5 rounded-xl text-[#0B120D] focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20 transition-colors"
-                    >
-                      <option value="">Select Product B</option>
-                      {products.map((p) => (
-                        <option key={p._id} value={p.name || p.title}>{p.name || p.title}</option>
-                      ))}
-                    </select>
-                    <Icon path={ICONS.chevron} className="w-3.5 h-3.5 text-neutral-400 rotate-90 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Matrix Display */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Product A Card */}
-                <div className="relative bg-[#FAFAF7] rounded-2xl border border-[#E8E4D9] overflow-hidden">
-                  <span className="absolute top-0 left-0 w-full h-1 bg-[#0B120D]" />
-                  <div className="p-5">
-                    {statsA ? (
-                      <div>
-                        <div className="flex items-center gap-3 mb-4">
-                          <SafeImage src={statsA.details?.image} alt={productA} className="w-14 h-14 object-cover rounded-xl border border-[#E0DCD1]" />
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded-full">Product A</span>
-                            <h4 className="font-bold text-sm text-[#0B120D] mt-1.5 truncate">{productA}</h4>
-                            <p className="text-xs text-neutral-500 font-mono">PKR {Number(statsA.details?.price || 0).toLocaleString()}</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 mt-4">
-                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
-                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Units Sold</p>
-                            <p className="text-xl font-bold font-mono text-[#0B120D]">{statsA.unitsSold}</p>
-                          </div>
-                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
-                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Total Revenue</p>
-                            <p className="text-xl font-bold font-mono text-[#A6362B]">PKR {statsA.revenue.toLocaleString()}</p>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-[#E0DCD1] flex justify-between gap-2">
-                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md">Online: {statsA.onlineOrders}</span>
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Offline: {statsA.offlineOrders}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-neutral-400 italic text-center py-8">Select Product A to compare</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Product B Card */}
-                <div className="relative bg-[#FAFAF7] rounded-2xl border border-[#E8E4D9] overflow-hidden">
-                  <span className="absolute top-0 left-0 w-full h-1 bg-[#A6362B]" />
-                  <div className="p-5">
-                    {statsB ? (
-                      <div>
-                        <div className="flex items-center gap-3 mb-4">
-                          <SafeImage src={statsB.details?.image} alt={productB} className="w-14 h-14 object-cover rounded-xl border border-[#E0DCD1]" />
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-bold uppercase bg-[#A6362B] text-white px-2 py-0.5 rounded-full">Product B</span>
-                            <h4 className="font-bold text-sm text-[#0B120D] mt-1.5 truncate">{productB}</h4>
-                            <p className="text-xs text-neutral-500 font-mono">PKR {Number(statsB.details?.price || 0).toLocaleString()}</p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 mt-4">
-                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
-                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Units Sold</p>
-                            <p className="text-xl font-bold font-mono text-[#0B120D]">{statsB.unitsSold}</p>
-                          </div>
-                          <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
-                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Total Revenue</p>
-                            <p className="text-xl font-bold font-mono text-[#A6362B]">PKR {statsB.revenue.toLocaleString()}</p>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-[#E0DCD1] flex justify-between gap-2">
-                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md">Online: {statsB.onlineOrders}</span>
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Offline: {statsB.offlineOrders}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-neutral-400 italic text-center py-8">Select Product B to compare</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Charts & Breakdown Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Order Source & Status Breakdown */}
-              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02]">
-                <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Sales Source & Status Breakdown</h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs font-bold mb-1">
-                      <span className="text-blue-700 uppercase">Online Website Sales</span>
-                      <span>
-                        {deliveryRequests.length > 0
-                          ? Math.round((onlineRequests.length / deliveryRequests.length) * 100)
-                          : 0}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
-                      <div
-                        className="bg-blue-600 h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${deliveryRequests.length > 0 ? (onlineRequests.length / deliveryRequests.length) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs font-bold mb-1">
-                      <span className="text-amber-700 uppercase">Offline Counter Sales</span>
-                      <span>
-                        {deliveryRequests.length > 0
-                          ? Math.round((offlineRequests.length / deliveryRequests.length) * 100)
-                          : 0}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
-                      <div
-                        className="bg-amber-500 h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${deliveryRequests.length > 0 ? (offlineRequests.length / deliveryRequests.length) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Top Selling Products List */}
-              <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02]">
-                <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Top Selling Items Breakdown</h3>
-                {topSellingItems.length === 0 ? (
-                  <p className="text-xs text-neutral-400 italic">No sales data recorded yet.</p>
-                ) : (
-                  <div className="divide-y divide-[#F0EDE4]/80">
-                    {topSellingItems.map((item, idx) => (
-                      <div key={idx} className="py-2.5 flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-xs text-[#0B120D]">{item.name}</p>
-                          <p className="text-[10px] text-neutral-400">{item.count} total orders</p>
-                        </div>
-                        <span className="font-mono text-xs font-bold text-[#A6362B]">
-                          PKR {item.revenue.toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 1: ADD / EDIT HERO SLIDE */}
-        {activeTab === 'add-hero' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">
-                {editingHeroId ? 'Edit Hero Slide Details' : 'Add New Hero Slide Image'}
-              </h2>
-              {editingHeroId && (
-                <button onClick={handleCancelHeroEdit} className="text-xs text-[#A6362B] font-bold uppercase">
-                  Cancel Edit
-                </button>
-              )}
-            </div>
-
-            <form onSubmit={handleHeroSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-8 space-y-5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Badge Text (Tagline) *</label>
-                    <input
-                      type="text"
-                      name="badge"
-                      value={heroFormData.badge}
-                      onChange={handleHeroChange}
-                      required
-                      placeholder="STEP UP YOUR GAME"
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Main Title *</label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={heroFormData.title}
-                      onChange={handleHeroChange}
-                      required
-                      placeholder="SPIKE INTO ACTION"
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Subtitle / Description *</label>
-                    <textarea
-                      name="subtitle"
-                      value={heroFormData.subtitle}
-                      onChange={handleHeroChange}
-                      required
-                      rows="3"
-                      placeholder="Cricket & football footwear engineered for grip, speed and support on any pitch."
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Button CTA Text</label>
-                      <input
-                        type="text"
-                        name="cta"
-                        value={heroFormData.cta}
-                        onChange={handleHeroChange}
-                        placeholder="SHOP FOOTWEAR"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Button Link URL</label>
-                      <input
-                        type="text"
-                        name="link"
-                        value={heroFormData.link}
-                        onChange={handleHeroChange}
-                        placeholder="#collection"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-4 space-y-6">
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Hero Image *</label>
-                    <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
-                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                      {imagePreview ? (
-                        <div className="relative group">
-                          <img src={imagePreview} alt="Hero Preview" className="w-full h-48 object-cover rounded-lg" />
-                          <button
-                            type="button"
-                            onClick={handleClearImage}
-                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition"
-                          >
-                            ✕ Clear Image
-                          </button>
-                        </div>
-                      ) : (
-                        <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
-                          <p className="text-xs text-neutral-400 font-semibold">Upload Hero Section Banner Image (Max 5MB)</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase py-4 rounded-xl transition shadow-sm"
-                  >
-                    {loading ? 'Processing...' : editingHeroId ? 'Update Hero Slide' : 'Save Hero Slide'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 2: MANAGE HERO SLIDES */}
-        {activeTab === 'manage-hero' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Active Hero Slides Banner List</h2>
-              <button
-                onClick={() => {
-                  handleCancelHeroEdit();
-                  switchTab('add-hero');
-                }}
-                className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition"
-              >
-                + Add New Slide
+          {message.text && (
+            <div className={`mb-6 rounded-xl border p-4 flex items-center justify-between ${
+              message.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-[#A6362B]'
+            }`}>
+              <p className="text-sm font-semibold">{message.text}</p>
+              <button onClick={() => setMessage({ type: '', text: '' })}>
+                <Icon path={ICONS.close} className="w-4 h-4" />
               </button>
             </div>
+          )}
 
-            <div className="divide-y divide-[#F0EDE4]/80">
-              {heroSlides.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">
-                  No hero slides found in database. Add one to display on home page!
+          {/* TAB 0: SALES & REVENUE DASHBOARD */}
+          {activeTab === 'sales' && (
+            <div className="space-y-6">
+              {/* Header Action Bar */}
+              <div className="bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
+                <div>
+                  <h2 className="font-bold text-lg text-[#0B120D] tracking-wide flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-[#A6362B] rounded-full inline-block" />
+                    Sales & Revenue Dashboard
+                  </h2>
+                  <p className="text-xs text-neutral-500 mt-1 ml-4">Real-time revenue analytics, online/offline breakdown & order metrics</p>
                 </div>
-              ) : (
-                heroSlides.map((slide) => (
-                  <div key={slide._id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-[#FAFAF7] transition-colors">
-                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <SafeImage src={slide.image} alt={slide.title} className="w-24 h-16 object-cover rounded-lg border border-[#E8E4D9]" />
-                      <div>
-                        <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded">
-                          {slide.badge || 'TAGLINE'}
+
+                <div className="flex items-center gap-2.5 w-full lg:w-auto">
+                  <button
+                    onClick={() => setIsManualModalOpen(true)}
+                    className="flex-1 lg:flex-none bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <Icon path={ICONS.plus} className="w-4 h-4" />
+                    <span>Manual Order</span>
+                  </button>
+                  <button
+                    onClick={fetchSalesAnalytics}
+                    className="flex-1 lg:flex-none bg-white hover:bg-[#FAFAF7] text-[#0B120D] border border-[#E0DCD1] text-xs font-bold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Icon path={ICONS.chart} className="w-4 h-4 text-neutral-400" />
+                    <span>Refresh</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="flex-1 lg:flex-none bg-[#0B120D] hover:bg-[#1a251c] text-white text-xs font-bold px-5 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <Icon path={ICONS.download} className="w-4 h-4 text-[#C79A44]" />
+                    <span>PDF Report</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Revenue Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <span className="absolute top-0 left-0 w-full h-1 bg-[#0B120D]" />
+                  <div className="flex items-start justify-between mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-neutral-400">Total Gross Revenue</p>
+                    <div className="p-2 bg-[#0B120D]/5 text-[#0B120D] rounded-lg">
+                      <Icon path={ICONS.chart} className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold font-mono text-[#0B120D] tracking-tight">PKR {totalSalesRevenue.toLocaleString()}</h3>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded-md mt-3 inline-block">
+                    Calculated across all orders
+                  </span>
+                </div>
+
+                <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <span className="absolute top-0 left-0 w-full h-1 bg-blue-600" />
+                  <div className="flex items-start justify-between mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-blue-600">Online Store Revenue</p>
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                      <Icon path={ICONS.globe} className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold font-mono text-blue-800 tracking-tight">PKR {onlineRevenue.toLocaleString()}</h3>
+                  <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-1 rounded-md mt-3 inline-block">
+                    {onlineRequests.length} Online Web Orders
+                  </span>
+                </div>
+
+                <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <span className="absolute top-0 left-0 w-full h-1 bg-amber-500" />
+                  <div className="flex items-start justify-between mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">Offline Counter Revenue</p>
+                    <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                      <Icon path={ICONS.store} className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold font-mono text-amber-800 tracking-tight">PKR {offlineRevenue.toLocaleString()}</h3>
+                  <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-1 rounded-md mt-3 inline-block">
+                    {offlineRequests.length} Manual Counter Entries
+                  </span>
+                </div>
+
+                <div className="relative bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                  <span className="absolute top-0 left-0 w-full h-1 bg-[#C79A44]" />
+                  <div className="flex items-start justify-between mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-[#C79A44]">Average Order Value</p>
+                    <div className="p-2 bg-[#FDF8EE] text-[#C79A44] rounded-lg">
+                      <Icon path={ICONS.package} className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold font-mono text-[#0B120D] tracking-tight">PKR {avgOrderValue.toLocaleString()}</h3>
+                  <span className="text-[10px] text-[#96742f] font-bold bg-[#FDF8EE] px-2 py-1 rounded-md mt-3 inline-block">
+                    Per Order Average
+                  </span>
+                </div>
+              </div>
+
+              {/* PRODUCT VS PRODUCT COMPARISON */}
+              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#E8E4D9]/80 shadow-sm">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8 pb-5 border-b border-[#E8E4D9]">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-[#A6362B]/10 text-[#A6362B] rounded-xl">
+                      <Icon path={ICONS.compare} className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm uppercase tracking-wide text-[#0B120D]">Product vs Product Comparison</h3>
+                      <p className="text-xs text-neutral-500">Compare sales volume, total revenue, and channel distribution</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <div className="relative flex-1 lg:flex-none lg:w-56">
+                      <select
+                        value={productA}
+                        onChange={(e) => setProductA(e.target.value)}
+                        className="w-full appearance-none bg-[#FAFAF7] border border-[#E0DCD1] text-xs font-bold pl-3 pr-9 py-2.5 rounded-xl text-[#0B120D] focus:outline-none focus:border-[#C79A44]"
+                      >
+                        <option value="">Select Product A</option>
+                        {products.map((p) => (
+                          <option key={p._id} value={p.name || p.title}>{p.name || p.title}</option>
+                        ))}
+                      </select>
+                      <Icon path={ICONS.chevron} className="w-3.5 h-3.5 text-neutral-400 rotate-90 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+
+                    <span className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-[#0B120D] text-[#C79A44] text-[10px] font-bold uppercase">
+                      Vs
+                    </span>
+
+                    <div className="relative flex-1 lg:flex-none lg:w-56">
+                      <select
+                        value={productB}
+                        onChange={(e) => setProductB(e.target.value)}
+                        className="w-full appearance-none bg-[#FAFAF7] border border-[#E0DCD1] text-xs font-bold pl-3 pr-9 py-2.5 rounded-xl text-[#0B120D] focus:outline-none focus:border-[#C79A44]"
+                      >
+                        <option value="">Select Product B</option>
+                        {products.map((p) => (
+                          <option key={p._id} value={p.name || p.title}>{p.name || p.title}</option>
+                        ))}
+                      </select>
+                      <Icon path={ICONS.chevron} className="w-3.5 h-3.5 text-neutral-400 rotate-90 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="relative bg-[#FAFAF7] rounded-2xl border border-[#E8E4D9] overflow-hidden">
+                    <span className="absolute top-0 left-0 w-full h-1 bg-[#0B120D]" />
+                    <div className="p-5">
+                      {statsA ? (
+                        <div>
+                          <div className="flex items-center gap-3 mb-4">
+                            <SafeImage src={statsA.details?.image} alt={productA} className="w-14 h-14 object-cover rounded-xl border border-[#E0DCD1]" />
+                            <div className="min-w-0">
+                              <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded-full">Product A</span>
+                              <h4 className="font-bold text-sm text-[#0B120D] mt-1.5 truncate">{productA}</h4>
+                              <p className="text-xs text-neutral-500 font-mono">PKR {Number(statsA.details?.price || 0).toLocaleString()}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 mt-4">
+                            <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Units Sold</p>
+                              <p className="text-xl font-bold font-mono text-[#0B120D]">{statsA.unitsSold}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Total Revenue</p>
+                              <p className="text-xl font-bold font-mono text-[#A6362B]">PKR {statsA.revenue.toLocaleString()}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-[#E0DCD1] flex justify-between gap-2">
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md">Online: {statsA.onlineOrders}</span>
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Offline: {statsA.offlineOrders}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-neutral-400 italic text-center py-8">Select Product A to compare</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="relative bg-[#FAFAF7] rounded-2xl border border-[#E8E4D9] overflow-hidden">
+                    <span className="absolute top-0 left-0 w-full h-1 bg-[#A6362B]" />
+                    <div className="p-5">
+                      {statsB ? (
+                        <div>
+                          <div className="flex items-center gap-3 mb-4">
+                            <SafeImage src={statsB.details?.image} alt={productB} className="w-14 h-14 object-cover rounded-xl border border-[#E0DCD1]" />
+                            <div className="min-w-0">
+                              <span className="text-[10px] font-bold uppercase bg-[#A6362B] text-white px-2 py-0.5 rounded-full">Product B</span>
+                              <h4 className="font-bold text-sm text-[#0B120D] mt-1.5 truncate">{productB}</h4>
+                              <p className="text-xs text-neutral-500 font-mono">PKR {Number(statsB.details?.price || 0).toLocaleString()}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 mt-4">
+                            <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Units Sold</p>
+                              <p className="text-xl font-bold font-mono text-[#0B120D]">{statsB.unitsSold}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-[#E0DCD1]">
+                              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Total Revenue</p>
+                              <p className="text-xl font-bold font-mono text-[#A6362B]">PKR {statsB.revenue.toLocaleString()}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-[#E0DCD1] flex justify-between gap-2">
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md">Online: {statsB.onlineOrders}</span>
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-md">Offline: {statsB.offlineOrders}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-neutral-400 italic text-center py-8">Select Product B to compare</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Breakdown */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm">
+                  <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Sales Source Breakdown</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-xs font-bold mb-1">
+                        <span className="text-blue-700 uppercase">Online Website Sales</span>
+                        <span>
+                          {deliveryRequests.length > 0
+                            ? Math.round((onlineRequests.length / deliveryRequests.length) * 100)
+                            : 0}%
                         </span>
-                        <h3 className="font-bold text-sm text-[#0B120D] mt-1">{slide.title}</h3>
-                        <p className="text-xs text-neutral-500 line-clamp-1">{slide.subtitle}</p>
+                      </div>
+                      <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
+                        <div
+                          className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${deliveryRequests.length > 0 ? (onlineRequests.length / deliveryRequests.length) * 100 : 0}%`,
+                          }}
+                        />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <button
-                        onClick={() => handleEditHeroClick(slide)}
-                        className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteHeroClick(slide._id)}
-                        className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: ADD PRODUCT */}
-        {activeTab === 'add' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">
-                {editingId ? 'Edit Product Details' : 'Add New Product'}
-              </h2>
-              {editingId && (
-                <button onClick={handleCancelEdit} className="text-xs text-[#A6362B] font-bold uppercase">
-                  Cancel Edit
-                </button>
-              )}
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-8 space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Product Code *</label>
-                      <input
-                        type="text"
-                        name="productId"
-                        value={formData.productId}
-                        onChange={handleChange}
-                        required
-                        placeholder="KS-101"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm font-mono transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Product Title *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        placeholder="Kamran Gold Edition English Willow"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Price (PKR) *</label>
-                      <input
-                        type="number"
-                        name="price"
-                        value={formData.price}
-                        onChange={handleChange}
-                        required
-                        placeholder="25000"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm font-mono transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Category *</label>
-                      <select
-                        name="category"
-                        value={formData.category}
-                        onChange={handleChange}
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      >
-                        {MAIN_CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Subcategory *</label>
-                      <select
-                        name="subCategory"
-                        value={formData.subCategory}
-                        onChange={handleChange}
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      >
-                        {CATEGORY_MAP[formData.category]?.map((sub) => (
-                          <option key={sub} value={sub}>{sub}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Brand</label>
-                    <input
-                      type="text"
-                      name="brand"
-                      value={formData.brand}
-                      onChange={handleChange}
-                      placeholder="Kamran Sports"
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Description</label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      rows="4"
-                      placeholder="Enter specifications..."
-                      className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between bg-[#FAFAF7] p-4 rounded-lg border border-[#E0DCD1]">
-                    <span className="text-xs font-bold uppercase text-[#0B120D]">In Stock Availability</span>
-                    <input
-                      type="checkbox"
-                      name="inStock"
-                      checked={formData.inStock}
-                      onChange={handleChange}
-                      className="w-5 h-5 accent-[#A6362B] cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                <div className="lg:col-span-4 space-y-6">
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Image Upload</label>
-                    <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
-                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                      {imagePreview ? (
-                        <div className="relative group">
-                          <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
-                          <button
-                            type="button"
-                            onClick={handleClearImage}
-                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition"
-                          >
-                            ✕ Clear Image
-                          </button>
-                        </div>
-                      ) : (
-                        <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
-                          <p className="text-xs text-neutral-400 font-semibold">Click or drag image here (Max 5MB)</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-[#A6362B] hover:bg-[#8C2C22] text-white text-xs font-bold uppercase py-4 rounded-xl transition"
-                  >
-                    {loading ? 'Processing...' : editingId ? 'Update Product' : 'Publish Product'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 4: MANAGE PRODUCTS */}
-        {activeTab === 'manage' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex flex-col sm:flex-row gap-4">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="flex-1 bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
-              />
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
-              >
-                <option value="All">All Categories</option>
-                {MAIN_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="divide-y divide-[#F0EDE4]/80">
-              {filteredProducts.map((p) => (
-                <div key={p._id} className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <SafeImage src={p.image} alt={p.name || p.title} className="w-14 h-14 object-cover rounded-lg border border-[#E8E4D9]" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-[#0B120D] text-white text-[10px] font-mono px-2 py-0.5 rounded">{p.productId || 'N/A'}</span>
-                        <span className="text-[10px] font-bold uppercase bg-[#F0EDE4] px-2 py-0.5 rounded">{p.category}</span>
-                        <span className="text-[10px] font-bold uppercase bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded">{p.subCategory || p.subcategory}</span>
+                      <div className="flex justify-between text-xs font-bold mb-1">
+                        <span className="text-amber-700 uppercase">Offline Counter Sales</span>
+                        <span>
+                          {deliveryRequests.length > 0
+                            ? Math.round((offlineRequests.length / deliveryRequests.length) * 100)
+                            : 0}%
+                        </span>
                       </div>
-                      <h3 className="font-bold text-sm text-[#0B120D] mt-1">{p.name || p.title}</h3>
-                      <p className="text-xs font-mono font-bold text-neutral-500">PKR {p.price?.toLocaleString()}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleEditClick(p)}
-                      className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(p._id)}
-                      className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: ADD / EDIT STAR */}
-        {activeTab === 'add-star' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8">
-            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">
-                {editingStarId ? 'Edit Star Details' : 'Add New Player / Star'}
-              </h2>
-              {editingStarId && (
-                <button onClick={handleCancelStarEdit} className="text-xs text-[#A6362B] font-bold uppercase">
-                  Cancel Edit
-                </button>
-              )}
-            </div>
-
-            <form onSubmit={handleStarSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-8 space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={starFormData.name}
-                        onChange={handleStarChange}
-                        required
-                        placeholder="e.g. Babar Azam"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">City *</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={starFormData.city}
-                        onChange={handleStarChange}
-                        required
-                        placeholder="e.g. LAHORE"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Role / Tag *</label>
-                      <input
-                        type="text"
-                        name="role"
-                        value={starFormData.role}
-                        onChange={handleStarChange}
-                        required
-                        placeholder="e.g. HARDBALL KING / TOP BATSMAN"
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Category *</label>
-                      <select
-                        name="category"
-                        value={starFormData.category}
-                        onChange={handleStarChange}
-                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                      >
-                        <option value="Tapeball">Tapeball Star</option>
-                        <option value="Hardball Star">Hardball Star</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-4 space-y-6">
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Image</label>
-                    <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
-                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                      {imagePreview ? (
-                        <div className="relative group">
-                          <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
-                          <button
-                            type="button"
-                            onClick={handleClearImage}
-                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition"
-                          >
-                            ✕ Clear Image
-                          </button>
-                        </div>
-                      ) : (
-                        <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
-                          <p className="text-xs text-neutral-400 font-semibold">Upload player photo (Max 5MB)</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold uppercase py-4 rounded-xl transition"
-                  >
-                    {loading ? 'Processing...' : editingStarId ? 'Update Star' : 'Save Star'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 6: MANAGE STARS */}
-        {activeTab === 'manage-stars' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">All Registered Stars</h2>
-              <select
-                value={starCategoryFilter}
-                onChange={(e) => setStarCategoryFilter(e.target.value)}
-                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
-              >
-                <option value="All">All Categories</option>
-                <option value="Tapeball">Tapeball</option>
-                <option value="Hardball">Hardball</option>
-              </select>
-            </div>
-
-            <div className="divide-y divide-[#F0EDE4]/80">
-              {filteredStars.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">No stars added yet.</div>
-              ) : (
-                filteredStars.map((s) => (
-                  <div key={s._id} className="p-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <SafeImage src={s.image} alt={s.name} className="w-14 h-14 object-cover rounded-lg border border-[#E8E4D9]" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded">
-                            📍 {s.city}
-                          </span>
-                          <span className="text-[10px] font-bold uppercase bg-[#C79A44] text-white px-2 py-0.5 rounded">
-                            {s.category}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-sm text-[#0B120D] mt-1">{s.name}</h3>
-                        <p className="text-xs font-mono font-bold text-[#A6362B]">{s.role}</p>
+                      <div className="w-full bg-neutral-100 h-3 rounded-full overflow-hidden">
+                        <div
+                          className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${deliveryRequests.length > 0 ? (offlineRequests.length / deliveryRequests.length) * 100 : 0}%`,
+                          }}
+                        />
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEditStarClick(s)}
-                        className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteStarClick(s._id)}
-                        className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
-                      >
-                        Delete
-                      </button>
-                    </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
+                </div>
 
-        {/* TAB 7: ADD WILLOW IMAGE */}
-        {activeTab === 'add-willow' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] p-8 max-w-xl">
-            <h2 className="font-bold text-sm uppercase text-[#0B120D] mb-6 pb-4 border-b border-[#E8E4D9]">
-              Add Willow Image
-            </h2>
-            <form onSubmit={handleWillowSubmit} className="space-y-5">
-              <div>
-                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Willow Wood Photo</label>
-                <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
-                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                  {imagePreview ? (
-                    <div className="relative group">
-                      <img src={imagePreview} alt="Preview" className="w-full h-56 object-cover rounded-lg" />
-                      <button type="button" onClick={handleClearImage}
-                        className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md transition">
-                        ✕ Clear Image
-                      </button>
-                    </div>
+                <div className="lg:col-span-6 bg-white p-6 rounded-2xl border border-[#E8E4D9]/80 shadow-sm">
+                  <h3 className="font-bold text-sm uppercase text-[#0B120D] mb-4">Top Selling Items Breakdown</h3>
+                  {topSellingItems.length === 0 ? (
+                    <p className="text-xs text-neutral-400 italic">No sales data recorded yet.</p>
                   ) : (
-                    <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-14 hover:bg-[#FAFAF7] transition rounded-lg">
-                      <p className="text-xs text-neutral-400 font-semibold">Upload plain willow-wood photo (Max 5MB)</p>
+                    <div className="divide-y divide-[#F0EDE4]/80">
+                      {topSellingItems.map((item, idx) => (
+                        <div key={idx} className="py-2.5 flex justify-between items-center">
+                          <div>
+                            <p className="font-bold text-xs text-[#0B120D]">{item.name}</p>
+                            <p className="text-[10px] text-neutral-400">{item.count} total orders</p>
+                          </div>
+                          <span className="font-mono text-xs font-bold text-[#A6362B]">
+                            PKR {item.revenue.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
-              <button type="submit" disabled={loading}
-                className="w-full bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold uppercase py-4 rounded-xl transition">
-                {loading ? 'Uploading...' : 'Save Willow Image'}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 8: MANAGE WILLOW GALLERY */}
-        {activeTab === 'manage-willow' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Willow Gallery ({willowImages.length})</h2>
             </div>
-            {willowImages.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">No willow images added yet.</div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
-                {willowImages.map((img) => (
-                  <div key={img._id} className="relative group rounded-xl overflow-hidden border border-[#E8E4D9]">
-                    <SafeImage src={img.url || img.image} alt="Willow" className="w-full h-32 object-cover" />
+          )}
+
+          {/* TAB 1: ADD / EDIT HERO SLIDE */}
+          {activeTab === 'add-hero' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm p-8">
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">
+                  {editingHeroId ? 'Edit Hero Slide Details' : 'Add New Hero Slide Image'}
+                </h2>
+                {editingHeroId && (
+                  <button onClick={handleCancelHeroEdit} className="text-xs text-[#A6362B] font-bold uppercase">
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleHeroSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8 space-y-5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Badge Text *</label>
+                      <input
+                        type="text"
+                        name="badge"
+                        value={heroFormData.badge}
+                        onChange={handleHeroChange}
+                        required
+                        placeholder="STEP UP YOUR GAME"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Main Title *</label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={heroFormData.title}
+                        onChange={handleHeroChange}
+                        required
+                        placeholder="SPIKE INTO ACTION"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Subtitle *</label>
+                      <textarea
+                        name="subtitle"
+                        value={heroFormData.subtitle}
+                        onChange={handleHeroChange}
+                        required
+                        rows="3"
+                        placeholder="Cricket & football footwear engineered for grip..."
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">CTA Button Text</label>
+                        <input
+                          type="text"
+                          name="cta"
+                          value={heroFormData.cta}
+                          onChange={handleHeroChange}
+                          placeholder="SHOP FOOTWEAR"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Link URL</label>
+                        <input
+                          type="text"
+                          name="link"
+                          value={heroFormData.link}
+                          onChange={handleHeroChange}
+                          placeholder="#collection"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-4 space-y-6">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Hero Image *</label>
+                      <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                        {imagePreview ? (
+                          <div className="relative group">
+                            <img src={imagePreview} alt="Hero Preview" className="w-full h-48 object-cover rounded-lg" />
+                            <button
+                              type="button"
+                              onClick={handleClearImage}
+                              className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md"
+                            >
+                              ✕ Clear Image
+                            </button>
+                          </div>
+                        ) : (
+                          <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
+                            <p className="text-xs text-neutral-400 font-semibold">Upload Banner Image (Max 5MB)</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <button
-                      onClick={() => handleDeleteWillowClick(img._id)}
-                      className="absolute top-2 right-2 bg-red-600/90 hover:bg-red-700 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition"
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase py-4 rounded-xl transition"
                     >
-                      Delete
+                      {loading ? 'Processing...' : editingHeroId ? 'Update Hero Slide' : 'Save Hero Slide'}
                     </button>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 9: DELIVERY REQUESTS */}
-        {activeTab === 'delivery-requests' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex flex-wrap justify-between items-center gap-4">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Delivery Requests ({filteredDeliveryRequests.length})</h2>
-              
-              <div className="flex items-center gap-3">
-                <select
-                  value={deliverySourceFilter}
-                  onChange={(e) => setDeliverySourceFilter(e.target.value)}
-                  className="bg-white border border-[#E0DCD1] px-3 py-2 rounded-lg text-xs font-bold focus:outline-none"
-                >
-                  <option value="All">All Sources</option>
-                  <option value="online">Online Web</option>
-                  <option value="offline">Offline Counter</option>
-                </select>
-
-                <select
-                  value={deliveryStatusFilter}
-                  onChange={(e) => setDeliveryStatusFilter(e.target.value)}
-                  className="bg-white border border-[#E0DCD1] px-3 py-2 rounded-lg text-xs font-bold focus:outline-none"
-                >
-                  <option value="All">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="dispatched">Dispatched</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
+                </div>
+              </form>
             </div>
+          )}
 
-            <div className="divide-y divide-[#F0EDE4]/80">
-              {filteredDeliveryRequests.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">No delivery requests found.</div>
-              ) : (
-                filteredDeliveryRequests.map((r) => {
-                  const status = r.status || 'pending';
-                  const source = r.orderSource || 'online';
-                  return (
-                    <div key={r._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                            source === 'offline' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {source}
+          {/* TAB 2: MANAGE HERO SLIDES */}
+          {activeTab === 'manage-hero' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden">
+              <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">Active Hero Slides Banner List</h2>
+                <button
+                  onClick={() => {
+                    handleCancelHeroEdit();
+                    switchTab('add-hero');
+                  }}
+                  className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition"
+                >
+                  + Add New Slide
+                </button>
+              </div>
+
+              <div className="divide-y divide-[#F0EDE4]/80">
+                {heroSlides.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 text-sm">
+                    No hero slides found in database.
+                  </div>
+                ) : (
+                  heroSlides.map((slide) => (
+                    <div key={slide._id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-[#FAFAF7]">
+                      <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <SafeImage src={slide.image} alt={slide.title} className="w-24 h-16 object-cover rounded-lg border border-[#E8E4D9]" />
+                        <div>
+                          <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded">
+                            {slide.badge || 'TAGLINE'}
                           </span>
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                            status === 'pending' ? 'bg-orange-100 text-orange-700' :
-                            status === 'dispatched' ? 'bg-emerald-100 text-emerald-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {status}
-                          </span>
-                          {(r.product || r.productName) && (
-                            <span className="text-[10px] font-mono text-[#A6362B] font-bold">{r.product || r.productName}</span>
-                          )}
+                          <h3 className="font-bold text-sm text-[#0B120D] mt-1">{slide.title}</h3>
+                          <p className="text-xs text-neutral-500 line-clamp-1">{slide.subtitle}</p>
                         </div>
-                        <h3 className="font-bold text-sm text-[#0B120D]">{r.name || r.customerName} — {r.phone || r.phoneNumber}</h3>
-                        <p className="text-xs text-neutral-500 mt-1">{r.address}, {r.city}</p>
-                        {r.notes && <p className="text-xs text-neutral-400 mt-1 italic">"{r.notes}"</p>}
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 self-end sm:self-center">
                         <button
-                          onClick={() => openWhatsAppForRequest(r)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                          onClick={() => handleEditHeroClick(slide)}
+                          className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
                         >
-                          WhatsApp
+                          Edit
                         </button>
-                        {status !== 'dispatched' && (
-                          <button
-                            onClick={() => handleMarkDispatched(r._id, 'dispatched')}
-                            className="bg-[#0B120D] hover:bg-[#C79A44] text-[#fff] text-xs font-bold px-3 py-1.5 rounded transition"
-                          >
-                            Mark Dispatched
-                          </button>
-                        )}
                         <button
-                          onClick={() => handleDeleteDeliveryClick(r._id)}
+                          onClick={() => handleDeleteHeroClick(slide._id)}
                           className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
                         >
                           Delete
                         </button>
                       </div>
                     </div>
-                  );
-                })
-              )}
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* TAB 10: REVIEWS */}
-        {activeTab === 'reviews' && (
-          <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm shadow-black/[0.02] overflow-hidden">
-            <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
-              <h2 className="font-bold text-sm uppercase text-[#0B120D]">Customer Reviews ({filteredReviews.length})</h2>
-              <select
-                value={reviewStatusFilter}
-                onChange={(e) => setReviewStatusFilter(e.target.value)}
-                className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
-              >
-                <option value="All">All Reviews</option>
-                <option value="Approved">Approved (Live)</option>
-                <option value="Pending">Pending</option>
-              </select>
-            </div>
+          {/* TAB 3: ADD PRODUCT */}
+          {activeTab === 'add' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm p-8">
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">
+                  {editingId ? 'Edit Product Details' : 'Add New Product'}
+                </h2>
+                {editingId && (
+                  <button onClick={handleCancelEdit} className="text-xs text-[#A6362B] font-bold uppercase">
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
 
-            <div className="divide-y divide-[#F0EDE4]/80">
-              {filteredReviews.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">No reviews yet.</div>
-              ) : (
-                filteredReviews.map((r) => (
-                  <div key={r._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                          r.approved ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
-                        }`}>
-                          {r.approved ? 'Live on site' : 'Pending approval'}
-                        </span>
-                        <span className="text-[10px] font-mono text-[#C79A44] font-bold">{'★'.repeat(Number(r.rating) || 0)}</span>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Product Code *</label>
+                        <input
+                          type="text"
+                          name="productId"
+                          value={formData.productId}
+                          onChange={handleChange}
+                          required
+                          placeholder="KS-101"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm font-mono focus:outline-none focus:border-[#C79A44]"
+                        />
                       </div>
-                      <h3 className="font-bold text-sm text-[#0B120D]">{r.name} — {r.product}</h3>
-                      {r.comment && <p className="text-xs text-neutral-500 mt-1">{r.comment}</p>}
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Product Title *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          placeholder="Kamran Gold Edition English Willow"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {!r.approved ? (
-                        <button
-                          onClick={() => handleApproveReview(r._id, true)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Price (PKR) *</label>
+                        <input
+                          type="number"
+                          name="price"
+                          value={formData.price}
+                          onChange={handleChange}
+                          required
+                          placeholder="25000"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm font-mono focus:outline-none focus:border-[#C79A44]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Category *</label>
+                        <select
+                          name="category"
+                          value={formData.category}
+                          onChange={handleChange}
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
                         >
-                          Approve
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleApproveReview(r._id, false)}
-                          className="bg-neutral-200 hover:bg-neutral-300 text-neutral-700 text-xs font-bold px-3 py-1.5 rounded transition"
+                          {MAIN_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Subcategory *</label>
+                        <select
+                          name="subCategory"
+                          value={formData.subCategory}
+                          onChange={handleChange}
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
                         >
-                          Hide
-                        </button>
-                      )}
+                          {CATEGORY_MAP[formData.category]?.map((sub) => (
+                            <option key={sub} value={sub}>{sub}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Brand</label>
+                      <input
+                        type="text"
+                        name="brand"
+                        value={formData.brand}
+                        onChange={handleChange}
+                        placeholder="Kamran Sports"
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Description</label>
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        rows="4"
+                        placeholder="Enter specifications..."
+                        className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between bg-[#FAFAF7] p-4 rounded-lg border border-[#E0DCD1]">
+                      <span className="text-xs font-bold uppercase text-[#0B120D]">In Stock Availability</span>
+                      <input
+                        type="checkbox"
+                        name="inStock"
+                        checked={formData.inStock}
+                        onChange={handleChange}
+                        className="w-5 h-5 accent-[#A6362B] cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-4 space-y-6">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Image Upload</label>
+                      <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                        {imagePreview ? (
+                          <div className="relative group">
+                            <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
+                            <button
+                              type="button"
+                              onClick={handleClearImage}
+                              className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md"
+                            >
+                              ✕ Clear Image
+                            </button>
+                          </div>
+                        ) : (
+                          <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
+                            <p className="text-xs text-neutral-400 font-semibold">Click or drag image here (Max 5MB)</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-[#A6362B] hover:bg-[#8C2C22] text-white text-xs font-bold uppercase py-4 rounded-xl transition"
+                    >
+                      {loading ? 'Processing...' : editingId ? 'Update Product' : 'Publish Product'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 4: MANAGE PRODUCTS */}
+          {activeTab === 'manage' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden">
+              <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex flex-col sm:flex-row gap-4">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products..."
+                  className="flex-1 bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+                />
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+                >
+                  <option value="All">All Categories</option>
+                  {MAIN_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="divide-y divide-[#F0EDE4]/80">
+                {filteredProducts.map((p) => (
+                  <div key={p._id} className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <SafeImage src={p.image} alt={p.name || p.title} className="w-14 h-14 object-cover rounded-lg border border-[#E8E4D9]" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#0B120D] text-white text-[10px] font-mono px-2 py-0.5 rounded">{p.productId || 'N/A'}</span>
+                          <span className="text-[10px] font-bold uppercase bg-[#F0EDE4] px-2 py-0.5 rounded">{p.category}</span>
+                          <span className="text-[10px] font-bold uppercase bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded">{p.subCategory || p.subcategory}</span>
+                        </div>
+                        <h3 className="font-bold text-sm text-[#0B120D] mt-1">{p.name || p.title}</h3>
+                        <p className="text-xs font-mono font-bold text-neutral-500">PKR {p.price?.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleDeleteReviewClick(r._id)}
+                        onClick={() => handleEditClick(p)}
+                        className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(p._id)}
                         className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
                       >
                         Delete
                       </button>
                     </div>
                   </div>
-                ))
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: ADD / EDIT STAR */}
+          {activeTab === 'add-star' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm p-8">
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#E8E4D9]">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">
+                  {editingStarId ? 'Edit Star Details' : 'Add New Player / Star'}
+                </h2>
+                {editingStarId && (
+                  <button onClick={handleCancelStarEdit} className="text-xs text-[#A6362B] font-bold uppercase">
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleStarSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={starFormData.name}
+                          onChange={handleStarChange}
+                          required
+                          placeholder="e.g. Babar Azam"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">City *</label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={starFormData.city}
+                          onChange={handleStarChange}
+                          required
+                          placeholder="e.g. LAHORE"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Role / Tag *</label>
+                        <input
+                          type="text"
+                          name="role"
+                          value={starFormData.role}
+                          onChange={handleStarChange}
+                          required
+                          placeholder="e.g. HARDBALL KING / TOP BATSMAN"
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Category *</label>
+                        <select
+                          name="category"
+                          value={starFormData.category}
+                          onChange={handleStarChange}
+                          className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-3 rounded-xl text-sm focus:outline-none focus:border-[#C79A44]"
+                        >
+                          <option value="Tapeball">Tapeball Star</option>
+                          <option value="Hardball Star">Hardball Star</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-4 space-y-6">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Player Image</label>
+                      <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                        {imagePreview ? (
+                          <div className="relative group">
+                            <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
+                            <button
+                              type="button"
+                              onClick={handleClearImage}
+                              className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md"
+                            >
+                              ✕ Clear Image
+                            </button>
+                          </div>
+                        ) : (
+                          <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-10 hover:bg-[#FAFAF7] transition rounded-lg">
+                            <p className="text-xs text-neutral-400 font-semibold">Upload player photo (Max 5MB)</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold uppercase py-4 rounded-xl transition"
+                    >
+                      {loading ? 'Processing...' : editingStarId ? 'Update Star' : 'Save Star'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 6: MANAGE STARS */}
+          {activeTab === 'manage-stars' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden">
+              <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex justify-between items-center">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">All Registered Stars</h2>
+                <select
+                  value={starCategoryFilter}
+                  onChange={(e) => setStarCategoryFilter(e.target.value)}
+                  className="bg-white border border-[#E0DCD1] px-4 py-2 rounded-lg text-sm focus:outline-none"
+                >
+                  <option value="All">All Categories</option>
+                  <option value="Tapeball">Tapeball</option>
+                  <option value="Hardball">Hardball</option>
+                </select>
+              </div>
+
+              <div className="divide-y divide-[#F0EDE4]/80">
+                {filteredStars.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 text-sm">No stars added yet.</div>
+                ) : (
+                  filteredStars.map((s) => (
+                    <div key={s._id} className="p-4 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <SafeImage src={s.image} alt={s.name} className="w-14 h-14 object-cover rounded-lg border border-[#E8E4D9]" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase bg-[#0B120D] text-white px-2 py-0.5 rounded">
+                              📍 {s.city}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase bg-[#C79A44] text-white px-2 py-0.5 rounded">
+                              {s.category}
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-sm text-[#0B120D] mt-1">{s.name}</h3>
+                          <p className="text-xs font-mono font-bold text-[#A6362B]">{s.role}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditStarClick(s)}
+                          className="bg-[#0B120D] hover:bg-[#C79A44] text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStarClick(s._id)}
+                          className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded hover:bg-[#A6362B] hover:text-white transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: ADD WILLOW IMAGE */}
+          {activeTab === 'add-willow' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm p-8 max-w-xl">
+              <h2 className="font-bold text-sm uppercase text-[#0B120D] mb-6 pb-4 border-b border-[#E8E4D9]">
+                Add Willow Image
+              </h2>
+              <form onSubmit={handleWillowSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-2">Willow Wood Photo</label>
+                  <div className="relative border-2 border-dashed border-[#E0DCD1] rounded-xl p-2 text-center">
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                    {imagePreview ? (
+                      <div className="relative group">
+                        <img src={imagePreview} alt="Preview" className="w-full h-56 object-cover rounded-lg" />
+                        <button type="button" onClick={handleClearImage}
+                          className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+                          ✕ Clear Image
+                        </button>
+                      </div>
+                    ) : (
+                      <div onClick={() => fileInputRef.current?.click()} className="cursor-pointer py-14 hover:bg-[#FAFAF7] transition rounded-lg">
+                        <p className="text-xs text-neutral-400 font-semibold">Upload plain willow-wood photo (Max 5MB)</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button type="submit" disabled={loading}
+                  className="w-full bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold uppercase py-4 rounded-xl transition">
+                  {loading ? 'Uploading...' : 'Save Willow Image'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 8: MANAGE WILLOW GALLERY */}
+          {activeTab === 'manage-willow' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden">
+              <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">Willow Gallery ({willowImages.length})</h2>
+              </div>
+              {willowImages.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">No willow images added yet.</div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
+                  {willowImages.map((img) => (
+                    <div key={img._id} className="relative group rounded-xl overflow-hidden border border-[#E8E4D9]">
+                      <SafeImage src={img.url || img.image} alt="Willow" className="w-full h-32 object-cover" />
+                      <button
+                        onClick={() => handleDeleteWillowClick(img._id)}
+                        className="absolute top-2 right-2 bg-red-600/90 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        )}
-      </main>
+          )}
+
+          {/* TAB 9: DELIVERY REQUESTS & SALES RECORDS */}
+          {activeTab === 'delivery-requests' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden">
+              <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">Delivery Requests & Sales Records ({filteredDeliveryRequests.length})</h2>
+                
+                <div className="flex items-center gap-3">
+                  <select
+                    value={deliverySourceFilter}
+                    onChange={(e) => setDeliverySourceFilter(e.target.value)}
+                    className="bg-white border border-[#E0DCD1] px-3 py-1.5 rounded-lg text-xs font-bold text-[#0B120D] focus:outline-none"
+                  >
+                    <option value="All">All Sources (Online & Offline)</option>
+                    <option value="online">Online Orders</option>
+                    <option value="offline">Offline Counter Sales</option>
+                  </select>
+
+                  <select
+                    value={deliveryStatusFilter}
+                    onChange={(e) => setDeliveryStatusFilter(e.target.value)}
+                    className="bg-white border border-[#E0DCD1] px-3 py-1.5 rounded-lg text-xs font-bold text-[#0B120D] focus:outline-none"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="dispatched">Dispatched</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="divide-y divide-[#F0EDE4]/80">
+                {filteredDeliveryRequests.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 text-sm">No sales or delivery requests found matching filters.</div>
+                ) : (
+                  filteredDeliveryRequests.map((req) => {
+                    const price = req.price || req.amount || req.totalAmount || getProductPrice(req.product);
+                    const isOffline = req.orderSource === 'offline';
+                    const isDispatched = req.status === 'dispatched';
+
+                    return (
+                      <div key={req._id} className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-[#FAFAF7]">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${isOffline ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                              {isOffline ? 'Offline Counter' : 'Online Website'}
+                            </span>
+                            <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${isDispatched ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}`}>
+                              {req.status || 'pending'}
+                            </span>
+                            <span className="text-[10px] font-mono text-neutral-400">
+                              {req.createdAt ? new Date(req.createdAt).toLocaleDateString('en-PK') : 'Recent'}
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-sm text-[#0B120D]">{req.name || req.customerName || 'Customer'}</h3>
+                          <p className="text-xs text-neutral-600">
+                            <span className="font-semibold">Phone:</span> {req.phone || req.phoneNumber || 'N/A'} | <span className="font-semibold">City:</span> {req.city || 'N/A'}
+                          </p>
+                          {req.address && (
+                            <p className="text-xs text-neutral-500 mt-0.5">
+                              <span className="font-semibold">Address:</span> {req.address}
+                            </p>
+                          )}
+                          <p className="text-xs text-[#0B120D] font-medium mt-1">
+                            <span className="font-semibold">Product:</span> {req.product || req.productName || 'Standard Order'}
+                          </p>
+                          {req.notes && (
+                            <p className="text-xs italic text-neutral-400 mt-0.5">
+                              Note: {req.notes}
+                            </p>
+                          )}
+                          <p className="text-xs font-mono font-bold text-[#A6362B] mt-1">
+                            PKR {price.toLocaleString()} ({req.paymentMethod || 'Cash'})
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end md:self-center">
+                          {!isOffline && (
+                            <button
+                              onClick={() => openWhatsAppForRequest(req)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                            >
+                              WhatsApp
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleMarkDispatched(req._id, isDispatched ? 'pending' : 'dispatched')}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
+                              isDispatched
+                                ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                                : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            }`}
+                          >
+                            {isDispatched ? 'Mark Pending' : 'Mark Dispatched'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDeliveryClick(req._id)}
+                            className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-[#A6362B] hover:text-white transition"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 10: CUSTOMER REVIEWS */}
+          {activeTab === 'reviews' && (
+            <div className="bg-white rounded-2xl border border-[#E8E4D9]/80 shadow-sm overflow-hidden">
+              <div className="p-4 bg-[#FAFAF7]/70 border-b border-[#E8E4D9]/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="font-bold text-sm uppercase text-[#0B120D]">Customer Reviews ({filteredReviews.length})</h2>
+                <select
+                  value={reviewStatusFilter}
+                  onChange={(e) => setReviewStatusFilter(e.target.value)}
+                  className="bg-white border border-[#E0DCD1] px-3 py-1.5 rounded-lg text-xs font-bold text-[#0B120D] focus:outline-none"
+                >
+                  <option value="All">All Reviews</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Pending">Pending Approval</option>
+                </select>
+              </div>
+
+              <div className="divide-y divide-[#F0EDE4]/80">
+                {filteredReviews.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 text-sm">No reviews found matching filter.</div>
+                ) : (
+                  filteredReviews.map((rev) => (
+                    <div key={rev._id} className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-[#FAFAF7]">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${rev.approved ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'}`}>
+                            {rev.approved ? 'Approved' : 'Pending Approval'}
+                          </span>
+                          <span className="text-xs text-amber-500 font-bold">
+                            {'★'.repeat(rev.rating || 5)}{'☆'.repeat(5 - (rev.rating || 5))}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-sm text-[#0B120D]">{rev.userName || rev.name || 'Anonymous'}</h3>
+                        <p className="text-xs text-neutral-500 mb-1">
+                          Product: <span className="font-semibold">{rev.productName || rev.product || 'General'}</span>
+                        </p>
+                        <p className="text-xs text-neutral-700 italic bg-[#FAFAF7] p-2.5 rounded-lg border border-[#E8E4D9]">
+                          "{rev.comment || rev.review || rev.message}"
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                        <button
+                          onClick={() => handleApproveReview(rev._id, !rev.approved)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
+                            rev.approved
+                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          }`}
+                        >
+                          {rev.approved ? 'Hide Review' : 'Approve & Publish'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReviewClick(rev._id)}
+                          className="bg-red-50 text-[#A6362B] border border-red-200 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-[#A6362B] hover:text-white transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </main>
       </div>
 
-      {/* MANUAL OFFLINE ORDER MODAL */}
+      {/* MANUAL ENTRY MODAL */}
       {isManualModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-[#E8E4D9]/80 shadow-2xl">
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#E8E4D9]">
-              <h3 className="font-bold text-sm text-[#0B120D] uppercase flex items-center gap-2">
-                <Icon path={ICONS.store} className="w-4 h-4 text-[#C79A44]" />
-                <span>Record Manual Offline Counter Order</span>
-              </h3>
-              <button onClick={() => setIsManualModalOpen(false)}>
-                <Icon path={ICONS.close} className="w-5 h-5 text-neutral-400 hover:text-black" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border border-[#E8E4D9]">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#E8E4D9]">
+              <div>
+                <h3 className="font-bold text-base text-[#0B120D] uppercase tracking-wide">Record Offline Sales Entry</h3>
+                <p className="text-xs text-neutral-400">Manual counter/offline sale recording</p>
+              </div>
+              <button
+                onClick={() => setIsManualModalOpen(false)}
+                className="text-neutral-400 hover:text-[#0B120D] transition"
+              >
+                <Icon path={ICONS.close} className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleManualOrderSubmit} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Customer Name *</label>
+                <label className="block text-[11px] font-bold uppercase text-[#0B120D] mb-1">Customer Name *</label>
                 <input
                   type="text"
                   name="name"
                   value={manualFormData.name}
                   onChange={handleManualChange}
                   required
-                  placeholder="e.g. Walk-in Customer / Ahmad"
-                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                  placeholder="Walk-in Customer / Name"
+                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-xs focus:outline-none focus:border-[#C79A44]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Phone Number *</label>
+                  <label className="block text-[11px] font-bold uppercase text-[#0B120D] mb-1">Phone Number</label>
                   <input
                     type="text"
                     name="phone"
                     value={manualFormData.phone}
                     onChange={handleManualChange}
-                    required
                     placeholder="03001234567"
-                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-xs focus:outline-none focus:border-[#C79A44]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">City</label>
+                  <label className="block text-[11px] font-bold uppercase text-[#0B120D] mb-1">City</label>
                   <input
                     type="text"
                     name="city"
                     value={manualFormData.city}
                     onChange={handleManualChange}
-                    placeholder="Lahore / Counter"
-                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                    placeholder="Sialkot / Store Counter"
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-xs focus:outline-none focus:border-[#C79A44]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Product Name *</label>
-                <select
+                <label className="block text-[11px] font-bold uppercase text-[#0B120D] mb-1">Product Title / Item *</label>
+                <input
+                  type="text"
                   name="product"
                   value={manualFormData.product}
-                  onChange={(e) => {
-                    handleManualChange(e);
-                    const pr = getProductPrice(e.target.value);
-                    if (pr) setManualFormData((prev) => ({ ...prev, amount: pr }));
-                  }}
+                  onChange={handleManualChange}
                   required
-                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
-                >
-                  <option value="">Select Product from Stock</option>
-                  {products.map((p) => (
-                    <option key={p._id} value={p.name || p.title}>{p.name || p.title} (PKR {p.price})</option>
-                  ))}
-                </select>
+                  placeholder="Select or enter item name"
+                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-xs focus:outline-none focus:border-[#C79A44]"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Total Amount (PKR) *</label>
+                  <label className="block text-[11px] font-bold uppercase text-[#0B120D] mb-1">Amount (PKR) *</label>
                   <input
                     type="number"
                     name="amount"
                     value={manualFormData.amount}
                     onChange={handleManualChange}
                     required
-                    placeholder="15000"
-                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm font-mono transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                    placeholder="5000"
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-xs font-mono focus:outline-none focus:border-[#C79A44]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Payment Method</label>
+                  <label className="block text-[11px] font-bold uppercase text-[#0B120D] mb-1">Payment Method</label>
                   <select
                     name="paymentMethod"
                     value={manualFormData.paymentMethod}
                     onChange={handleManualChange}
-                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                    className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-xs focus:outline-none focus:border-[#C79A44]"
                   >
                     <option value="Cash">Cash</option>
+                    <option value="Online Transfer">Online Transfer</option>
                     <option value="Card">Card</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#0B120D]/80 uppercase tracking-wide mb-1">Notes / Remarks</label>
-                <input
-                  type="text"
+                <label className="block text-[11px] font-bold uppercase text-[#0B120D] mb-1">Notes / Address Details</label>
+                <textarea
                   name="notes"
                   value={manualFormData.notes}
                   onChange={handleManualChange}
-                  placeholder="Counter discount or special note..."
-                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-sm transition-colors focus:outline-none focus:border-[#C79A44] focus:ring-2 focus:ring-[#C79A44]/20"
+                  rows="2"
+                  placeholder="Optional notes or address details..."
+                  className="w-full bg-[#FAFAF7] border border-[#E0DCD1] p-2.5 rounded-xl text-xs focus:outline-none focus:border-[#C79A44]"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-3">
+              <div className="pt-3 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setIsManualModalOpen(false)}
-                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold px-4 py-2.5 rounded-lg"
+                  className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold py-3 rounded-xl transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-[#C79A44] hover:bg-[#b58a3a] text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow-sm"
+                  className="flex-1 bg-[#0B120D] hover:bg-[#A6362B] text-white text-xs font-bold py-3 rounded-xl transition"
                 >
-                  {loading ? 'Saving Order...' : 'Save Manual Order'}
+                  {loading ? 'Recording...' : 'Save Record'}
                 </button>
               </div>
             </form>
