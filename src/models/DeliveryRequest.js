@@ -2,26 +2,35 @@ import mongoose from 'mongoose';
 
 const DeliveryRequestSchema = new mongoose.Schema(
   {
-    // Online vs Offline track karne ke liye
     orderSource: {
       type: String,
       enum: ['online', 'offline'],
       default: 'online',
       required: true,
     },
-    customerName: {
+    name: {
       type: String,
       required: [true, 'Customer name is required'],
     },
-    phoneNumber: {
+    phone: {
       type: String,
       required: [true, 'Phone number is required'],
+    },
+    city: {
+      type: String,
+      default: 'N/A',
     },
     address: {
       type: String,
       required: [true, 'Address is required'],
     },
-    // Product details (Optional agar details save karni hain)
+    product: {
+      type: String,
+    },
+    quantity: {
+      type: Number,
+      default: 1,
+    },
     items: [
       {
         productName: { type: String },
@@ -29,9 +38,12 @@ const DeliveryRequestSchema = new mongoose.Schema(
         price: { type: Number, default: 0 },
       },
     ],
-    totalAmount: {
+    amount: {
       type: Number,
       default: 0,
+    },
+    invoiceNumber: {
+      type: String,
     },
     paymentMethod: {
       type: String,
@@ -49,7 +61,7 @@ const DeliveryRequestSchema = new mongoose.Schema(
       default: 'pending',
     },
     notes: {
-      type: String, // Manual entries ke waqt koi extra details likhne ke liye
+      type: String,
     },
   },
   { timestamps: true }

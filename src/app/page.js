@@ -9,10 +9,9 @@ import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 
 // Updated: Bracket `{}` k sath import kar diya gaya hai 
-// taake agar aap ki component files mein 'export function' use hua ho to error na aaye
-import  WillowShowcaseCard  from '@/components/WillowShowcaseCard';
-import FastDispatchCard  from '@/components/FastDispatchCard';
-import  SatisfactionReviewsCard  from '@/components/SatisfactionReviewsCard';
+import WillowShowcaseCard from '@/components/WillowShowcaseCard';
+import FastDispatchCard from '@/components/FastDispatchCard';
+import SatisfactionReviewsCard from '@/components/SatisfactionReviewsCard';
 
 import { useCart } from '@/context/CartContext';
 import './motion.css';
@@ -348,7 +347,7 @@ function useDominantColors(imageUrls) {
           cacheRef.current[idx] = { rgb: `${r}, ${g}, ${b}`, luminance };
           if (!cancelled) bump((n2) => n2 + 1);
         } catch (err) {
-          // Cross-origin image tainted the canvas
+          // Cross-origin image tainted canvas
         }
       };
       img.onerror = () => {};
@@ -540,11 +539,6 @@ function HomeContent() {
       if (!fullText.includes(gloveTypeFilter.toLowerCase())) return false;
     }
 
-    // Exact subCategory match FIRST — e.g. "Tennis Bat", "English Willow", "Kashmir Willow".
-    // This MUST run before the generic keyword buckets below, otherwise a subCategory like
-    // "Tennis Bat" gets swallowed by the broad "bat" keyword bucket (mixed with English/Kashmir
-    // Willow), or dropped entirely if the literal word "bat"/"willow" isn't present anywhere
-    // else in the product's category/title/description text.
     if (pSub && (pSub === activeCat || pSub.includes(activeCat) || activeCat.includes(pSub))) {
       return true;
     }
@@ -653,7 +647,7 @@ function HomeContent() {
                 style={{ backgroundColor: `rgba(${heroAccent.rgb}, 0.14)` }}
               />
 
-              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full py-24 flex flex-col justify-between min-h-screen sm:min-h-0">
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 w-full py-20 sm:py-24 flex flex-col justify-between min-h-screen sm:min-h-0">
                 <div className="max-w-3xl space-y-8 mt-16 sm:mt-0">
                   <div className="overflow-hidden">
                     <span key={`badge-${currentSlide}`} className="inline-flex items-center gap-2.5 text-[10px] font-mono font-bold uppercase tracking-[0.35em] text-[#C79A44] mb-2" style={{ animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
@@ -931,7 +925,7 @@ function HomeContent() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="relative bg-white h-96 rounded-xl overflow-hidden border border-[#E8E4D9]">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/[0.03] to-transparent animate-shimmer" />
@@ -957,37 +951,55 @@ function HomeContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-7">
+              /* PRODUCT CARDS GRID - FIXED CLIPPING AT 100% ZOOM */
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-7">
                 {filteredProducts.map((product, i) => {
                   const title = product.name || product.title || 'Product';
                   const imgUrl = product.image || product.images?.[0] || 'https://placehold.co/400x500/F4F1EA/0B120D?text=No+Image';
                   const price = Number(product.price || 0).toLocaleString();
 
                   return (
-                    <div key={product._id || product.id || i} className="reveal group relative bg-white border border-[#E8E4D9] rounded-xl overflow-hidden flex flex-col hover:border-[#A6362B]/30 hover:shadow-xl transition-all duration-500" style={{ transitionDelay: `${(i % 8) * 60}ms` }}>
-                      <Link href={`/products/${product._id}`} className="block relative bg-[#F4F1EA] aspect-[4/5] overflow-hidden">
-                        <span className="absolute top-4 left-4 z-10 bg-[#0B120D] text-white text-[9px] font-mono font-bold uppercase px-3 py-1.5 tracking-widest">
+                    <div 
+                      key={product._id || product.id || i} 
+                      className="reveal group relative bg-white border border-[#E8E4D9] rounded-xl flex flex-col hover:border-[#A6362B]/30 hover:shadow-xl transition-all duration-300" 
+                      style={{ transitionDelay: `${(i % 8) * 60}ms` }}
+                    >
+                      {/* Image block retains rounded top corners and clip */}
+                      <Link href={`/products/${product._id}`} className="block relative bg-[#F4F1EA] aspect-[4/5] overflow-hidden rounded-t-xl">
+                        <span className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-10 bg-[#0B120D] text-white text-[8px] sm:text-[9px] font-mono font-bold uppercase px-2 py-1 sm:px-3 sm:py-1.5 tracking-widest rounded-sm">
                           {product.category || 'Gear'}
                         </span>
                         {product.inStock === false && (
-                          <span className="absolute top-4 right-4 z-10 bg-[#A6362B] text-white text-[9px] font-mono font-bold uppercase px-3 py-1.5 tracking-widest">Sold Out</span>
+                          <span className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 z-10 bg-[#A6362B] text-white text-[8px] sm:text-[9px] font-mono font-bold uppercase px-2 py-1 sm:px-3 sm:py-1.5 tracking-widest rounded-sm">Sold Out</span>
                         )}
                         <img src={imgUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                       </Link>
 
-                      <div className="p-5 flex flex-col flex-1">
+                      {/* Info & Cart Button Section */}
+                      <div className="p-3.5 sm:p-5 flex flex-col flex-1">
                         <Link href={`/products/${product._id}`}>
                           <h3 className="font-bold text-xs sm:text-sm text-[#0B120D] uppercase tracking-wide line-clamp-1 group-hover:text-[#A6362B] transition-colors">{title}</h3>
                         </Link>
                         <p className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">{product.subCategory || product.category || 'Cricket'}</p>
-                        <div className="mt-auto pt-4 flex items-center justify-between">
-                          <span className="font-mono text-sm sm:text-base font-bold text-[#0B120D]">Rs. {price}</span>
-                          <button onClick={() => handleAddToCart(product)} disabled={addedId === product._id || product.inStock === false}
-                            className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${addedId === product._id ? 'bg-emerald-600 text-white' : 'bg-[#0B120D] text-white hover:bg-[#A6362B] hover:scale-110'} ${bouncingId === product._id ? 'animate-bounce' : ''}`}>
+                        
+                        <div className="mt-auto pt-3 sm:pt-4 flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs sm:text-base font-bold text-[#0B120D] truncate">
+                            Rs. {price}
+                          </span>
+                          
+                          {/* Cart Button Safe Layout */}
+                          <button 
+                            onClick={() => handleAddToCart(product)} 
+                            disabled={addedId === product._id || product.inStock === false}
+                            className={`shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                              addedId === product._id ? 'bg-emerald-600 text-white' : 'bg-[#0B120D] text-white hover:bg-[#A6362B] hover:scale-105'
+                            } ${bouncingId === product._id ? 'animate-bounce' : ''}`}
+                            aria-label="Add to cart"
+                          >
                             {addedId === product._id ? (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                             ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             )}
                           </button>
                         </div>

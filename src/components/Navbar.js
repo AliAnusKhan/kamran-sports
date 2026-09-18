@@ -98,7 +98,7 @@ const CATEGORY_TREE = [
     value: 'Cricket Store',
     isMegaMenu: true,
     gridCols: 'grid-cols-3',
-    dropdownWidth: 'w-[750px] xl:w-[850px]',
+    dropdownWidth: 'w-[700px] xl:w-[800px]',
     sections: [
       {
         title: 'Bats',
@@ -161,7 +161,7 @@ const CATEGORY_TREE = [
     value: 'Shoes',
     isMegaMenu: true,
     gridCols: 'grid-cols-2',
-    dropdownWidth: 'w-[450px]',
+    dropdownWidth: 'w-[420px]',
     sections: [
       {
         title: 'Cricket Shoes',
@@ -186,7 +186,7 @@ const CATEGORY_TREE = [
     value: 'Caps',
     isMegaMenu: true,
     gridCols: 'grid-cols-2',
-    dropdownWidth: 'w-[400px]',
+    dropdownWidth: 'w-[380px]',
     sections: [
       {
         title: 'Caps',
@@ -202,7 +202,7 @@ const CATEGORY_TREE = [
     value: 'Football & Multiple Balls',
     isMegaMenu: true,
     gridCols: 'grid-cols-3',
-    dropdownWidth: 'w-[600px]',
+    dropdownWidth: 'w-[580px]',
     sections: [
       {
         title: 'Footballs',
@@ -236,7 +236,7 @@ const CATEGORY_TREE = [
     value: 'Shirt & Trouser',
     isMegaMenu: true,
     gridCols: 'grid-cols-2',
-    dropdownWidth: 'w-[480px]',
+    dropdownWidth: 'w-[450px]',
     sections: [
       {
         title: 'Cricket Kits & Whites',
@@ -262,7 +262,7 @@ const CATEGORY_TREE = [
     value: 'Indoor Games',
     isMegaMenu: true,
     gridCols: 'grid-cols-3',
-    dropdownWidth: 'w-[620px]',
+    dropdownWidth: 'w-[580px]',
     sections: [
       {
         title: 'Board & Family Games',
@@ -300,7 +300,7 @@ const CATEGORY_TREE = [
     value: 'Trophies & Medals',
     isMegaMenu: true,
     gridCols: 'grid-cols-2',
-    dropdownWidth: 'w-[420px]',
+    dropdownWidth: 'w-[400px]',
     sections: [
       {
         title: 'Trophies',
@@ -381,7 +381,6 @@ export default function Navbar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // UPDATED: Proper handling of main category vs subcategory query parameters
   const handleSubClick = (subValue, mainCategory = null) => {
     if (typeof setActiveCategory === 'function') {
       setActiveCategory(subValue);
@@ -404,23 +403,22 @@ export default function Navbar({
     if (subValue === 'All') {
       router.push('/products');
     } else if (mainCategory && mainCategory !== subValue) {
-      // Direct push with both category and subcategory
       router.push(`/products?category=${encodeURIComponent(mainCategory)}&subcategory=${encodeURIComponent(subValue)}`);
     } else {
-      // Direct push for top-level category click
       router.push(`/products?category=${encodeURIComponent(subValue)}`);
     }
   };
 
   return (
-    <header className="w-full sticky top-0 z-50 bg-white border-b border-[#D9D4C4] shadow-sm">
+    <header className="w-full sticky top-0 z-50 bg-white border-b border-[#D9D4C4] shadow-sm overflow-x-clip">
       <AnnouncementBar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 lg:gap-4">
-        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+      <div className="max-w-[1536px] mx-auto px-3 sm:px-5 h-16 sm:h-20 flex items-center justify-between gap-2 w-full">
+        {/* Logo Section */}
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 -ml-2 text-[#0B120D] hover:text-[#A6362B] transition cursor-pointer"
+            className="xl:hidden p-2 -ml-2 text-[#0B120D] hover:text-[#A6362B] transition cursor-pointer"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -432,44 +430,37 @@ export default function Navbar({
             </svg>
           </button>
 
-          <Link href="/" className="flex items-center">
-            <img src="/logo.jpg" alt="Kamran Sports Karachi" className="logo-tilt h-10 sm:h-12 w-auto object-contain" />
+          <Link href="/" className="flex items-center shrink-0">
+            <img src="/logo.jpg" alt="Kamran Sports Karachi" className="logo-tilt h-9 sm:h-12 w-auto object-contain" />
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav ref={navRef} className="hidden lg:flex items-center gap-2 xl:gap-4 text-xs xl:text-sm font-semibold uppercase tracking-wide">
-          {CATEGORY_TREE.map((cat) => {
+        {/* Navigation Categories (Properly Scaled & Non-overlapping) */}
+        <nav ref={navRef} className="hidden xl:flex items-center justify-center gap-1 2xl:gap-2 text-[11px] 2xl:text-xs font-semibold uppercase tracking-tight 2xl:tracking-wider flex-1 min-w-0 mx-2">
+          {CATEGORY_TREE.map((cat, idx) => {
             const isOpen = openDropdown === cat.name;
+            const isRightAligned = idx >= CATEGORY_TREE.length - 2;
 
             return (
               <div
                 key={cat.name}
-                className="relative"
+                className="relative shrink-0"
                 onMouseEnter={() => setOpenDropdown(cat.name)}
                 onMouseLeave={() => setOpenDropdown(null)}
               >
-                {cat.isSpecial ? (
-                  <button
-                    onClick={() => handleSubClick(cat.value)}
-                    className="bg-[#A6362B] hover:bg-[#8C2C22] text-white px-3 py-1.5 rounded-sm text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer shrink-0 flex items-center gap-1"
-                  >
-                    {cat.name}
-                    {cat.isMegaMenu && <ChevronIcon className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleSubClick(cat.value)}
-                    className="relative pb-2 pt-1 flex items-center gap-1 cursor-pointer transition-colors text-[#0B120D] hover:text-[#A6362B] whitespace-nowrap"
-                  >
-                    {cat.name}
-                    {cat.isMegaMenu && <ChevronIcon className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
-                  </button>
-                )}
+                <button
+                  onClick={() => handleSubClick(cat.value)}
+                  className={`relative px-2 py-1.5 rounded-md flex items-center gap-0.5 cursor-pointer transition-all duration-200 text-[#0B120D] hover:text-[#A6362B] hover:bg-[#F4F1EA] whitespace-nowrap ${
+                    activeCategory === cat.value ? 'text-[#A6362B] bg-[#F4F1EA] font-bold' : ''
+                  }`}
+                >
+                  {cat.name}
+                  {cat.isMegaMenu && <ChevronIcon className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
+                </button>
 
                 {cat.isMegaMenu && isOpen && (
-                  <div className={`absolute top-full -left-4 pt-2 z-50 ${cat.dropdownWidth}`}>
-                    <div className={`bg-white border border-[#D9D4C4] rounded-sm shadow-2xl p-6 grid ${cat.gridCols} gap-6`}>
+                  <div className={`absolute top-full pt-2 z-50 ${cat.dropdownWidth} ${isRightAligned ? 'right-0' : '-left-2'}`}>
+                    <div className={`bg-white border border-[#D9D4C4] rounded-sm shadow-2xl p-5 grid ${cat.gridCols} gap-5`}>
                       {cat.sections.map((section) => (
                         <div key={section.title} className="space-y-2">
                           <h4 className="text-xs font-bold text-[#0B120D] uppercase border-b border-[#D9D4C4] pb-1.5 tracking-wider">
@@ -497,19 +488,19 @@ export default function Navbar({
           })}
         </nav>
 
-        {/* Search & Cart */}
+        {/* Right Section: Search & Cart (Strictly Anchored to Right) */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="hidden md:flex items-center relative w-28 lg:w-32 xl:w-36">
+          <div className="hidden md:flex items-center relative w-24 xl:w-28">
             <input
               type="text"
               placeholder="Search..."
               value={currentSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full bg-[#F1EFE6] border border-[#D9D4C4] text-xs px-2.5 py-1.5 pl-7 pr-6 rounded-sm focus:outline-none focus:border-[#A6362B] text-[#0B120D] placeholder-neutral-500 transition-all"
+              className="w-full bg-[#F1EFE6] border border-[#D9D4C4] text-[11px] px-2 py-1.5 pl-6 pr-5 rounded-sm focus:outline-none focus:border-[#A6362B] text-[#0B120D] placeholder-neutral-500 transition-all"
             />
-            <SearchIcon className="w-3.5 h-3.5 absolute left-2 text-neutral-500 pointer-events-none" />
+            <SearchIcon className="w-3.5 h-3.5 absolute left-1.5 text-neutral-500 pointer-events-none" />
             {currentSearch && (
-              <button onClick={handleClearSearch} className="absolute right-1.5 text-neutral-400 hover:text-[#A6362B]">
+              <button onClick={handleClearSearch} className="absolute right-1 text-neutral-400 hover:text-[#A6362B]">
                 <CloseIcon className="w-3.5 h-3.5" />
               </button>
             )}
@@ -517,7 +508,7 @@ export default function Navbar({
 
           <button
             onClick={() => setIsOpen(true)}
-            className="bg-[#0B120D] hover:bg-[#A6362B] text-white pl-3.5 pr-3 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold uppercase flex items-center gap-2.5 rounded-sm transition-all duration-300 shadow-sm cursor-pointer"
+            className="bg-[#0B120D] hover:bg-[#A6362B] text-white pl-3 pr-2.5 sm:pl-3.5 sm:pr-3 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold uppercase flex items-center gap-2 rounded-sm transition-all duration-300 shadow-sm cursor-pointer shrink-0"
           >
             <CartIcon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
             <span className="hidden sm:inline tracking-wider">Cart</span>
@@ -530,7 +521,7 @@ export default function Navbar({
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 w-full bg-[#0B120D] text-white py-4 px-5 border-t border-white/10 space-y-3 shadow-2xl max-h-[80vh] overflow-y-auto z-50">
+        <div className="xl:hidden absolute top-full left-0 right-0 w-full bg-[#0B120D] text-white py-4 px-5 border-t border-white/10 space-y-3 shadow-2xl max-h-[80vh] overflow-y-auto z-50">
           <div className="relative w-full pb-1">
             <input
               type="text"
@@ -582,9 +573,7 @@ export default function Navbar({
                 <button
                   key={cat.name}
                   onClick={() => handleSubClick(cat.value)}
-                  className={`w-full text-left px-3 py-2.5 rounded-sm text-xs font-semibold uppercase tracking-wide ${
-                    cat.isSpecial ? 'bg-[#A6362B] text-white' : 'text-neutral-300 hover:bg-white/5'
-                  }`}
+                  className="w-full text-left px-3 py-2.5 rounded-sm text-xs font-semibold uppercase tracking-wide text-neutral-300 hover:bg-white/5"
                 >
                   {cat.name}
                 </button>
