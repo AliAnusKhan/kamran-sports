@@ -361,6 +361,147 @@ function useDominantColors(imageUrls) {
 }
 
 /* ═══════════════════════════════════════════
+   PRODUCT CARD  (hover par front → back image)
+═══════════════════════════════════════════ */
+const PLACEHOLDER_IMG = 'https://placehold.co/400x500/F4F1EA/0B120D?text=No+Image';
+
+// Agar aap chahte hain ke poori image dikhe (crop na ho), 'object-contain p-3' kar dein.
+const IMAGE_FIT = 'object-cover';
+
+const PRODUCT_GRID_CLASS =
+  'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10';
+
+/**
+ * Product ki images ki ordered list banata hai: [front, back, ...].
+ * Support: product.image (front), product.backImage (optional), product.images[] (strings ya {url}).
+ * Duplicate URLs remove ho jate hain, is liye front dobara "back" nahi banega.
+ */
+function getProductImages(product) {
+  const out = [];
+  const push = (v) => {
+    const src = typeof v === 'string' ? v : v?.url || v?.src;
+    if (src && !out.includes(src)) out.push(src);
+  };
+  push(product.image);
+  push(product.backImage);
+  if (Array.isArray(product.images)) product.images.forEach(push);
+  return out;
+}
+
+function ProductCard({ product, onAdd, isAdded = false, isBouncing = false }) {
+  const title = product.name || product.title || 'Product';
+  const [front, back] = getProductImages(product);
+  const price = Number(product.price || 0);
+  const original = Number(product.originalPrice || product.oldPrice || 0);
+  const discount = original > price && price > 0 ? Math.round(((original - price) / original) * 100) : 0;
+  const soldOut = product.inStock === false;
+  const href = `/products/${product._id || product.id}`;
+  const label = product.subCategory || product.category || 'Cricket';
+
+  return (
+    <article className="reveal group flex flex-col">
+      {/* IMAGE AREA */}
+      <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-[#EAE6DA] border border-[#E8E4D9] group-hover:border-[#A6362B]/25 group-hover:shadow-lg transition-all duration-300">
+        <Link href={href} aria-label={title} className="absolute inset-0 block">
+          {/* FRONT image — hamesha neeche rehti hai */}
+          <img
+            src={front || PLACEHOLDER_IMG}
+            alt={title}
+            loading="lazy"
+            onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+            className={`absolute inset-0 w-full h-full bg-[#F4F1EA] ${IMAGE_FIT} transition-transform duration-700 ease-out ${back ? '' : 'group-hover:scale-105'}`}
+          />
+
+          {/* BACK image — upar hai, hover par fade-in hoti hai */}
+          {back && (
+            <img
+              src={back}
+              alt={`${title} - back view`}
+              loading="lazy"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              className={`absolute inset-0 w-full h-full bg-[#F4F1EA] ${IMAGE_FIT} opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out`}
+            />
+          )}
+        </Link>
+
+        {/* Badges */}
+        <div className="pointer-events-none absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-10 flex flex-col items-start gap-1.5">
+          {discount > 0 && !soldOut && (
+            <span className="bg-[#A6362B] text-white text-[9px] sm:text-[10px] font-mono font-bold uppercase px-2 py-1 tracking-widest rounded-sm">
+              -{discount}%
+            </span>
+          )}
+        </div>
+
+        {/* Sold out overlay */}
+        {soldOut && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/55">
+            <span className="bg-[#0B120D] text-white text-[10px] font-mono font-bold uppercase px-3.5 py-2 tracking-[0.2em] rounded-sm">
+              Sold Out
+            </span>
+          </div>
+        )}
+
+        {/* Desktop quick-add bar (hover par neeche se slide-up) */}
+        {!soldOut && (
+          <button
+            type="button"
+            onClick={() => onAdd?.(product)}
+            disabled={isAdded}
+            className={`hidden sm:flex absolute inset-x-3 bottom-3 z-20 items-center justify-center gap-2 rounded-md py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-white backdrop-blur-sm translate-y-[140%] group-hover:translate-y-0 focus-visible:translate-y-0 transition-all duration-300 ${
+              isAdded ? 'bg-emerald-600' : 'bg-[#0B120D]/95 hover:bg-[#A6362B]'
+            } ${isBouncing ? 'animate-bounce' : ''}`}
+          >
+            {isAdded ? 'Added to cart' : 'Quick Add'}
+          </button>
+        )}
+      </div>
+
+      {/* INFO */}
+      <div className="pt-3.5 flex flex-col flex-1">
+        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-neutral-500 truncate">{label}</p>
+
+        <Link href={href}>
+          <h3 className="mt-1 text-sm font-semibold leading-snug text-[#0B120D] line-clamp-2 min-h-[2.5rem] group-hover:text-[#A6362B] transition-colors">
+            {title}
+          </h3>
+        </Link>
+
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-mono text-sm sm:text-base font-bold text-[#0B120D]">
+              Rs. {price.toLocaleString()}
+            </span>
+            {discount > 0 && (
+              <span className="font-mono text-[11px] text-neutral-400 line-through">
+                Rs. {original.toLocaleString()}
+              </span>
+            )}
+          </div>
+
+          {/* Mobile add button (touch par hover nahi hota) */}
+          {!soldOut && (
+            <button
+              type="button"
+              onClick={() => onAdd?.(product)}
+              disabled={isAdded}
+              aria-label="Add to cart"
+              className={`sm:hidden shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white transition-colors ${
+                isAdded ? 'bg-emerald-600' : 'bg-[#0B120D] active:bg-[#A6362B]'
+              } ${isBouncing ? 'animate-bounce' : ''}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={isAdded ? 'M5 13l4 4L19 7' : 'M12 4v16m8-8H4'} />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/* ═══════════════════════════════════════════
    MAIN HOME CONTENT
 ═══════════════════════════════════════════ */
 function HomeContent() {
@@ -375,6 +516,7 @@ function HomeContent() {
   const [batTypeFilter, setBatTypeFilter] = useState('All');
   const [ballTypeFilter, setBallTypeFilter] = useState('All');
   const [gloveTypeFilter, setGloveTypeFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('featured');
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -407,7 +549,7 @@ function HomeContent() {
     }
   }, [searchParams]);
 
-  useRevealObserver([loading, products.length, activeCategory, searchTerm]);
+  useRevealObserver([loading, products.length, activeCategory, searchTerm, batTypeFilter, ballTypeFilter, gloveTypeFilter, sortBy]);
 
   const handleCategorySelect = (categoryName) => {
     setActiveCategory(categoryName);
@@ -576,6 +718,59 @@ function HomeContent() {
 
     return pCat === activeCat || pSub === activeCat || pCat.includes(activeCat) || pSub.includes(activeCat);
   });
+
+  /* ── Results-page helpers ── */
+  const resetFilters = () => {
+    setSearchTerm('');
+    setActiveCategory('All');
+    setBatTypeFilter('All');
+    setBallTypeFilter('All');
+    setGloveTypeFilter('All');
+    setSortBy('featured');
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const browseCategory = (name) => {
+    setSearchTerm('');
+    setBatTypeFilter('All');
+    setBallTypeFilter('All');
+    setGloveTypeFilter('All');
+    setActiveCategory(name);
+  };
+
+  const priceOf = (p) => Number(p.price || 0);
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortBy) {
+      case 'price-asc': return priceOf(a) - priceOf(b);
+      case 'price-desc': return priceOf(b) - priceOf(a);
+      case 'name': return (a.name || a.title || '').localeCompare(b.name || b.title || '');
+      default: return 0;
+    }
+  });
+
+  const trimmedSearch = searchTerm.trim();
+  const pageTitle = trimmedSearch
+    ? `\u201C${trimmedSearch}\u201D`
+    : activeCategory !== 'All'
+      ? activeCategory
+      : 'Latest Arrivals';
+
+  const activeChips = [];
+  if (activeCategory !== 'All') {
+    activeChips.push({
+      key: 'category',
+      label: activeCategory,
+      clear: () => {
+        setActiveCategory('All');
+        setBatTypeFilter('All');
+        setBallTypeFilter('All');
+        setGloveTypeFilter('All');
+      },
+    });
+  }
+  if (batTypeFilter !== 'All') activeChips.push({ key: 'bat', label: batTypeFilter, clear: () => setBatTypeFilter('All') });
+  if (ballTypeFilter !== 'All') activeChips.push({ key: 'ball', label: ballTypeFilter, clear: () => setBallTypeFilter('All') });
+  if (gloveTypeFilter !== 'All') activeChips.push({ key: 'glove', label: gloveTypeFilter, clear: () => setGloveTypeFilter('All') });
 
   const slide = heroSlides[currentSlide] || DEFAULT_HERO_SLIDES[0];
 
@@ -897,116 +1092,228 @@ function HomeContent() {
           </>
         )}
 
-        {/* Dynamic Products Grid */}
-        <main id="collection" className={`bg-[#F4F1EA] px-4 sm:px-8 ${isFiltered ? 'pt-28 sm:pt-36 pb-24 min-h-[70vh]' : 'py-24'}`}>
+        {/* PRODUCTS — listing / search results */}
+        <main
+          id="collection"
+          className={`bg-[#F4F1EA] px-4 sm:px-8 ${isFiltered ? 'pt-28 sm:pt-32 pb-24 min-h-[70vh]' : 'py-24'}`}
+        >
           <div className="max-w-7xl mx-auto">
-            <div className="reveal text-center mb-14 space-y-3">
-              <span className="text-[10px] font-mono font-medium uppercase tracking-[0.3em] text-[#A6362B]">
-                {searchTerm ? 'Search Results' : isFiltered ? 'Category View' : 'The Collection'}
-              </span>
-              <h2 className="font-[family-name:var(--font-display)] text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-[#0B120D]">
-                {searchTerm ? `"${searchTerm}"` : activeCategory === 'All' ? 'Latest Arrivals' : activeCategory}
-              </h2>
-              {isFiltered && (
-                <button 
-                  onClick={() => {
-                    setActiveCategory('All');
-                    setSearchTerm('');
-                    setBatTypeFilter('All');
-                    setBallTypeFilter('All');
-                    setGloveTypeFilter('All');
-                  }} 
-                  className="inline-block text-xs font-mono font-bold text-[#A6362B] uppercase tracking-widest mt-2 underline cursor-pointer hover:opacity-80 transition-opacity"
-                >
-                  ← Back to Home Page
-                </button>
-              )}
-              <SeamStitch className="w-20 h-3 mx-auto mt-4" color="#A6362B" opacity={0.6} />
-            </div>
+            {isFiltered ? (
+              /* ── Professional results header: breadcrumb + title + count + sort + filter chips ── */
+              <header className="mb-8 sm:mb-10">
+                {/* Breadcrumb: sans-serif, sentence case, chevron separator */}
+                <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] text-neutral-500">
+                  <button type="button" onClick={resetFilters} className="hover:text-[#A6362B] transition-colors">
+                    Home
+                  </button>
+                  <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span className="font-medium text-[#0B120D] truncate max-w-[60vw]">
+                    {trimmedSearch ? 'Search results' : pageTitle}
+                  </span>
+                </nav>
+
+                <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="min-w-0">
+                    <h1 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[#0B120D] break-words">
+                      {pageTitle}
+                    </h1>
+
+                    {!loading && (
+                      <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
+                        <span>
+                          {sortedProducts.length} {sortedProducts.length === 1 ? 'product' : 'products'}
+                        </span>
+                        {trimmedSearch && (
+                          <>
+                            <span aria-hidden="true" className="h-3.5 w-px bg-neutral-300" />
+                            <button
+                              type="button"
+                              onClick={() => setSearchTerm('')}
+                              className="inline-flex items-center gap-1 font-medium text-[#A6362B] underline-offset-4 hover:underline"
+                            >
+                              Clear search
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </div>
+
+                  {!loading && sortedProducts.length > 1 && (
+                    <label className="flex items-center gap-3 shrink-0">
+                      <span className="text-xs text-neutral-500">Sort by</span>
+                      <span className="relative">
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                          className="appearance-none cursor-pointer rounded-md border border-[#D9D3C2] bg-white py-2.5 pl-4 pr-10 text-xs font-semibold text-[#0B120D] focus:outline-none focus:border-[#A6362B] transition-colors"
+                        >
+                          <option value="featured">Featured</option>
+                          <option value="price-asc">Price: Low to High</option>
+                          <option value="price-desc">Price: High to Low</option>
+                          <option value="name">Name: A to Z</option>
+                        </select>
+                        <svg
+                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500"
+                          fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </span>
+                    </label>
+                  )}
+                </div>
+
+                {activeChips.length > 0 && (
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    {activeChips.map((chip) => (
+                      <button
+                        key={chip.key}
+                        type="button"
+                        onClick={chip.clear}
+                        className="inline-flex items-center gap-2 rounded-full border border-[#D9D3C2] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0B120D] hover:border-[#A6362B] hover:text-[#A6362B] transition-colors"
+                      >
+                        {chip.label}
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    ))}
+                    {activeChips.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={resetFilters}
+                        className="ml-1 text-xs font-semibold text-neutral-500 underline underline-offset-4 hover:text-[#A6362B] transition-colors"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Simple solid divider (dashed stitch hata di) */}
+                <div className="mt-6 h-px w-full bg-[#E3DDCC]" />
+              </header>
+            ) : (
+              /* Home page ka original "The Collection" header */
+              <div className="reveal text-center mb-14 space-y-3">
+                <span className="text-[10px] font-mono font-medium uppercase tracking-[0.3em] text-[#A6362B]">
+                  The Collection
+                </span>
+                <h2 className="font-[family-name:var(--font-display)] text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-[#0B120D]">
+                  Latest Arrivals
+                </h2>
+                <SeamStitch className="w-20 h-3 mx-auto mt-4" color="#A6362B" opacity={0.6} />
+              </div>
+            )}
 
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className={PRODUCT_GRID_CLASS}>
                 {[...Array(8)].map((_, i) => (
-                  <div key={i} className="relative bg-white h-96 rounded-xl overflow-hidden border border-[#E8E4D9]">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/[0.03] to-transparent animate-shimmer" />
+                  <div key={i}>
+                    <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-[#E8E4D9]/60">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+                    </div>
+                    <div className="mt-3.5 space-y-2">
+                      <div className="h-2.5 w-1/3 rounded bg-[#E8E4D9]/70" />
+                      <div className="h-3.5 w-4/5 rounded bg-[#E8E4D9]/70" />
+                      <div className="h-4 w-1/2 rounded bg-[#E8E4D9]/70" />
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="reveal text-center py-24 bg-white rounded-2xl border border-[#E8E4D9]">
-                <p className="text-neutral-500 font-bold text-sm uppercase tracking-wider mb-2">
-                  {searchTerm ? `No gear found for "${searchTerm}"` : `No products found in "${activeCategory}"`}
-                </p>
-                <button 
-                  onClick={() => {
-                    setSearchTerm('');
-                    setActiveCategory('All');
-                    setBatTypeFilter('All');
-                    setBallTypeFilter('All');
-                    setGloveTypeFilter('All');
-                  }} 
-                  className="text-xs text-[#A6362B] underline font-bold uppercase tracking-wider mt-2"
-                >
-                  View All Products
-                </button>
+            ) : sortedProducts.length === 0 ? (
+              /* ── Empty state ── */
+              <div>
+                <div className="reveal rounded-2xl border border-dashed border-[#D2CBB8] bg-white px-6 py-14 sm:py-20 text-center">
+                  <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-[#F4F1EA] text-[#A6362B]">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.6}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
+                    </svg>
+                  </div>
+
+                  <h2 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-black uppercase tracking-wide text-[#0B120D]">
+                    {trimmedSearch
+                      ? `No results for \u201C${trimmedSearch}\u201D`
+                      : activeCategory !== 'All'
+                        ? `Nothing in \u201C${activeCategory}\u201D yet`
+                        : 'No products available yet'}
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-neutral-500">
+                    {trimmedSearch
+                      ? 'Spelling check karein ya koi aur keyword try karein, jaise "bat", "gloves" ya "shoes". Neeche se category bhi browse kar sakte hain.'
+                      : 'Is category mein abhi products available nahi hain. Doosri categories dekhein.'}
+                  </p>
+
+                  <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
+                    {FEATURED_CATEGORIES_LIST.map((cat) => (
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => browseCategory(cat.name)}
+                        className="rounded-full border border-[#D9D3C2] bg-white px-4 py-2 text-xs font-semibold text-[#0B120D] hover:border-[#A6362B] hover:text-[#A6362B] transition-colors"
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="mt-8 inline-flex items-center gap-3 bg-[#0B120D] hover:bg-[#A6362B] text-white px-7 py-3.5 text-[10px] font-mono font-bold uppercase tracking-[0.22em] transition-colors"
+                  >
+                    View all products
+                    <Icon path={ICONS.arrowRight} className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Suggestions taake page khali na lage */}
+                {products.length > 0 && (
+                  <section className="mt-16">
+                    <div className="mb-8 flex items-end justify-between gap-4">
+                      <h3 className="font-[family-name:var(--font-display)] text-xl sm:text-2xl font-black uppercase tracking-wide text-[#0B120D]">
+                        Popular Gear
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={resetFilters}
+                        className="text-xs font-semibold text-[#A6362B] underline underline-offset-4 hover:opacity-80"
+                      >
+                        See everything
+                      </button>
+                    </div>
+                    <div className={PRODUCT_GRID_CLASS}>
+                      {products.slice(0, 4).map((product, i) => (
+                        <ProductCard
+                          key={`rec-${product._id || product.id || i}`}
+                          product={product}
+                          onAdd={handleAddToCart}
+                          isAdded={addedId === product._id}
+                          isBouncing={bouncingId === product._id}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             ) : (
-              /* PRODUCT CARDS GRID - FIXED CLIPPING AT 100% ZOOM */
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-7">
-                {filteredProducts.map((product, i) => {
-                  const title = product.name || product.title || 'Product';
-                  const imgUrl = product.image || product.images?.[0] || 'https://placehold.co/400x500/F4F1EA/0B120D?text=No+Image';
-                  const price = Number(product.price || 0).toLocaleString();
-
-                  return (
-                    <div 
-                      key={product._id || product.id || i} 
-                      className="reveal group relative bg-white border border-[#E8E4D9] rounded-xl flex flex-col hover:border-[#A6362B]/30 hover:shadow-xl transition-all duration-300" 
-                      style={{ transitionDelay: `${(i % 8) * 60}ms` }}
-                    >
-                      {/* Image block retains rounded top corners and clip */}
-                      <Link href={`/products/${product._id}`} className="block relative bg-[#F4F1EA] aspect-[4/5] overflow-hidden rounded-t-xl">
-                        <span className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-10 bg-[#0B120D] text-white text-[8px] sm:text-[9px] font-mono font-bold uppercase px-2 py-1 sm:px-3 sm:py-1.5 tracking-widest rounded-sm">
-                          {product.category || 'Gear'}
-                        </span>
-                        {product.inStock === false && (
-                          <span className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 z-10 bg-[#A6362B] text-white text-[8px] sm:text-[9px] font-mono font-bold uppercase px-2 py-1 sm:px-3 sm:py-1.5 tracking-widest rounded-sm">Sold Out</span>
-                        )}
-                        <img src={imgUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-                      </Link>
-
-                      {/* Info & Cart Button Section */}
-                      <div className="p-3.5 sm:p-5 flex flex-col flex-1">
-                        <Link href={`/products/${product._id}`}>
-                          <h3 className="font-bold text-xs sm:text-sm text-[#0B120D] uppercase tracking-wide line-clamp-1 group-hover:text-[#A6362B] transition-colors">{title}</h3>
-                        </Link>
-                        <p className="text-[10px] text-neutral-500 uppercase tracking-wider mt-1">{product.subCategory || product.category || 'Cricket'}</p>
-                        
-                        <div className="mt-auto pt-3 sm:pt-4 flex items-center justify-between gap-2">
-                          <span className="font-mono text-xs sm:text-base font-bold text-[#0B120D] truncate">
-                            Rs. {price}
-                          </span>
-                          
-                          {/* Cart Button Safe Layout */}
-                          <button 
-                            onClick={() => handleAddToCart(product)} 
-                            disabled={addedId === product._id || product.inStock === false}
-                            className={`shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                              addedId === product._id ? 'bg-emerald-600 text-white' : 'bg-[#0B120D] text-white hover:bg-[#A6362B] hover:scale-105'
-                            } ${bouncingId === product._id ? 'animate-bounce' : ''}`}
-                            aria-label="Add to cart"
-                          >
-                            {addedId === product._id ? (
-                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            ) : (
-                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+              /* ── Product grid ── */
+              <div className={PRODUCT_GRID_CLASS}>
+                {sortedProducts.map((product, i) => (
+                  <ProductCard
+                    key={product._id || product.id || i}
+                    product={product}
+                    onAdd={handleAddToCart}
+                    isAdded={addedId === product._id}
+                    isBouncing={bouncingId === product._id}
+                  />
+                ))}
               </div>
             )}
           </div>

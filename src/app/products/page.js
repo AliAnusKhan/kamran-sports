@@ -1,139 +1,151 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { useCart } from '@/context/CartContext';
 
-function ProductsList() {
-  const [products, setProducts] = useState([]);
+export default function ProductDetailPage({ params: paramsPromise }) {
+  const params = use(paramsPromise);
+  const { id } = params;
+  const router = useRouter();
+
+  const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const searchParams = useSearchParams();
-
-  // Convert search parameters to string format for exact API forwarding
-  const searchString = searchParams.toString();
-  const categoryParam = searchParams.get('category');
-  const subCategoryParam =
-    searchParams.get('subcategory') ||
-    searchParams.get('subCategory') ||
-    searchParams.get('sub');
-
-  const selectedFilter = subCategoryParam || categoryParam || 'All';
+  const { addToCart } = useCart();
 
   useEffect(() => {
-    async function fetchProducts() {
-      setLoading(true);
+    async function fetchProduct() {
       try {
-        // Fetch products directly forwarding current URL search parameters
-        const res = await fetch(`/api/products?${searchString}`, { cache: 'no-store' });
+        const res = await fetch(`/api/products/${id}`);
         const data = await res.json();
-
         if (data.success) {
-          setProducts(data.data || []);
-        } else {
-          setProducts([]);
+          setProduct(data.data);
         }
-      } catch (error) {
-        console.error('Error fetching filtered products:', error);
-        setProducts([]);
-      } finally { // Fixed syntax error: replaced 'font-medium' with 'finally'
+      } catch (err) {
+        console.error('Error fetching product detail:', err);
+      } finally {
         setLoading(false);
       }
     }
+    fetchProduct();
+  }, [id]);
 
-    fetchProducts();
-  }, [searchString]); // Re-fetch whenever URL query parameters change
-
-  // Clean title for UI header display
-  const cleanDisplayTitle = decodeURIComponent(selectedFilter).replace(/-/g, ' ');
+  // Reusable back bar — uses next/link + router.back() so navigation stays
+  // client-side (no full page reload) whether the visitor arrived from the
+  // homepage, a category filter, or an external/direct link.
+  const BackBar = () => (
+    <div className="max-w-5xl mx-auto px-4 pt-6 flex items-center gap-4 text-xs font-bold uppercase tracking-wide">
+      <button
+        onClick={() => (window.history.length > 1 ? router.back() : router.push('/'))}
+        className="inline-flex items-center gap-1.5 text-[#0B120D]/70 hover:text-[#A6362B] transition-colors"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
+      <span className="text-[#0B120D]/20">/</span>
+      <Link href="/" className="text-[#0B120D]/70 hover:text-[#C79A44] transition-colors">
+        Home
+      </Link>
+      {product && (
+        <>
+          <span className="text-[#0B120D]/20">/</span>
+          <span className="text-[#0B120D]/40 truncate normal-case font-semibold tracking-normal">
+            {product.name}
+          </span>
+        </>
+      )}
+    </div>
+  );
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <p className="text-gray-500 font-medium text-base">Loading products...</p>
+      <div className="min-h-screen bg-[#FAFAF7] font-sans">
+        <Navbar />
+        <BackBar />
+        <div className="text-center py-20 font-bold text-neutral-400 text-sm uppercase tracking-wide">
+          Loading item details...
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF7] font-sans">
+        <Navbar />
+        <BackBar />
+        <div className="text-center py-20">
+          <p className="font-bold text-[#A6362B] text-sm uppercase tracking-wide mb-4">Product not found.</p>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 bg-[#0B120D] hover:bg-[#A6362B] text-white text-xs font-bold uppercase tracking-wider px-6 py-3 rounded-xl transition-colors"
+          >
+            Return to Home
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-[70vh]">
-      <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900 capitalize">
-          {cleanDisplayTitle === 'All' ? 'All Products' : cleanDisplayTitle}
-        </h1>
-        <span className="text-sm font-semibold text-gray-500">
-          Total Items: {products.length}
-        </span>
-      </div>
+    <div className="min-h-screen bg-[#FAFAF7] font-sans">
+      <Navbar />
+      <BackBar />
 
-      {products.length === 0 ? (
-        <div className="bg-gray-50 rounded-xl p-12 text-center border border-gray-200">
-          <p className="text-lg text-gray-600 font-medium">
-            No products found for "{cleanDisplayTitle}".
-          </p>
-          <Link
-            href="/products"
-            className="inline-block mt-4 text-sm font-bold text-[#A6362B] hover:underline"
-          >
-            View All Products &rarr;
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <div
-              key={product._id}
-              className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col"
-            >
-              <div className="h-48 bg-gray-100 overflow-hidden relative">
-                <img
-                  src={product.image || '/fallback.png'}
-                  alt={product.name || product.title}
-                  className="w-full h-full object-cover hover:scale-105 transition duration-300"
-                />
-              </div>
+      <main className="max-w-5xl mx-auto px-4 py-6">
+        <div className="bg-white rounded-2xl border border-[#E8E4D9] p-6 grid grid-cols-1 md:grid-cols-2 gap-8 shadow-sm">
+          {/* Image */}
+          <div className="border border-[#E8E4D9] rounded-xl overflow-hidden bg-[#F4F1EA]">
+            <img
+              src={product.image || 'https://via.placeholder.com/500'}
+              alt={product.name}
+              className="w-full h-80 md:h-96 object-cover"
+            />
+          </div>
 
-              <div className="p-4 flex flex-col flex-1 justify-between">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[10px] font-bold uppercase bg-gray-100 px-2 py-0.5 rounded text-gray-600">
-                      {product.category}
-                    </span>
-                    {(product.subCategory || product.subcategory) && (
-                      <span className="text-[10px] font-bold uppercase bg-red-50 text-[#A6362B] px-2 py-0.5 rounded">
-                        {product.subCategory || product.subcategory}
-                      </span>
-                    )}
-                  </div>
+          {/* Details */}
+          <div className="flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#A6362B] bg-[#A6362B]/10 px-2.5 py-1 rounded">
+                {product.category}
+              </span>
+              <h1 className="text-2xl font-black uppercase text-[#0B120D] mt-3">{product.name}</h1>
+              <p className="text-xl font-black text-[#0B120D] mt-2">PKR {product.price?.toLocaleString()}</p>
 
-                  <h3 className="font-bold text-gray-900 text-sm line-clamp-2">
-                    {product.name || product.title}
-                  </h3>
+              {product.description && (
+                <div className="mt-4 text-xs font-semibold text-neutral-600 leading-relaxed border-t border-[#F0EDE4] pt-3">
+                  {product.description}
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-base font-bold text-emerald-600 font-mono">
-                    PKR {product.price?.toLocaleString()}
-                  </span>
-                  <Link
-                    href={`/products/${product._id}`}
-                    className="bg-[#0B120D] text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-[#A6362B] transition"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
+              )}
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
-export default function ProductsPage() {
-  return (
-    <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
-      <ProductsList />
-    </Suspense>
+            {/* Actions */}
+            <div className="mt-6 space-y-3">
+              <button
+                onClick={() => addToCart(product)}
+                className="w-full bg-[#0B120D] hover:bg-[#A6362B] text-white py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <span>🛒</span>
+                <span>Add to Cart</span>
+              </button>
+
+              <Link
+                href="/"
+                className="w-full border border-[#E0DCD1] hover:border-[#C79A44] text-[#0B120D] py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition duration-300 flex items-center justify-center gap-2"
+              >
+                Continue Shopping
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   );
 }
